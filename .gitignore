@@ -10,3 +10,4 @@ wheels/
 .venv
 
 /conversation_log/
+/browser_profile/

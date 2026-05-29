@@ -1,100 +1,195 @@
 import asyncio
 import os
-from browser_use import Agent
-from browser_use.llm.openai.chat import ChatOpenAI
+from pathlib import Path
+from playwright.async_api import async_playwright
 
 # ==================== 配置区 ====================
-os.environ["OPENAI_API_KEY"] = "tp-c1g7nehvjiv148ml2rsiv09eanuee3culvm2nkudmr4it3fc"
-BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1"
-
-# 在这里填入你的本地 md 文件路径
-MD_FILE_PATH = "/Users/asuria/Desktop/ai_shell_content/每日热搜文案-2026-05-29.md"
+MD_FILE_PATH = "/Users/asuria/Desktop/browser/每日热搜文案-2026-05-29.md"
+USER_DATA_DIR = os.path.join(os.path.dirname(__file__), "browser_profile")
 
 
 def read_md_file(file_path: str) -> dict:
-    """读取 md 文件，提取标题和正文内容"""
+    """读取 md 文件，提取 **标题：** 和 **正文：** 的内容"""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"找不到文件: {file_path}")
 
     with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
+        text = f.read()
 
-    # 提取标题：取第一个 # 开头的行，去掉 # 符号
     title = ""
-    body_lines = content.split("\n")
-    for i, line in enumerate(body_lines):
+    body = ""
+
+    for line in text.split("\n"):
         stripped = line.strip()
-        if stripped.startswith("#"):
-            title = stripped.lstrip("# ").strip()
-            # 标题行之后的内容作为正文
-            body_lines = body_lines[i + 1 :]
-            break
+        if stripped.startswith("**标题：**"):
+            title = stripped.replace("**标题：**", "").strip()
+        elif stripped.startswith("**正文：**"):
+            body = stripped.replace("**正文：**", "").strip()
 
-    # 如果没有找到 # 标题，取第一行非空内容作为标题
     if not title:
-        for line in content.split("\n"):
-            stripped = line.strip()
-            if stripped:
-                title = stripped[:30]  # 截取前30个字符
-                break
+        raise ValueError("未找到 **标题：** 行")
+    if not body:
+        raise ValueError("未找到 **正文：** 行")
 
-    body = "\n".join(body_lines).strip()
-    # 小红书标题最长20个字，截取一下
     if len(title) > 20:
         title = title[:20]
 
     return {"title": title, "content": body}
 
 
+async def ensure_logged_in(context):
+    """检查登录状态，未登录则等待用户手动登录"""
+    page = await context.new_page()
+    await page.goto("https://creator.xiaohongshu.com/new/home", wait_until="networkidle", timeout=30000)
+    await page.wait_for_timeout(3000)
+
+    content = await page.content()
+    is_logged_in = any(kw in content for kw in ["创作者", "笔记管理", "数据看板", "发布笔记"])
+
+    if is_logged_in:
+        print("🎉 已登录！")
+        await page.close()
+        return
+
+    # 未登录，保持浏览器打开，等待用户手动登录
+    print("\n" + "=" * 50)
+    print("⚠️  检测到未登录，请在上方浏览器中完成以下操作：")
+    print("   1. 用手机小红书 APP 扫码登录")
+    print("   2. 登录成功进入创作者中心主页后，回到这里按回车")
+    print("=" * 50)
+    input("\n✅ 登录完成后按回车继续 >>> ")
+
+    # 验证登录
+    await page.reload(wait_until="networkidle", timeout=30000)
+    await page.wait_for_timeout(2000)
+    content = await page.content()
+    is_logged_in = any(kw in content for kw in ["创作者", "笔记管理", "数据看板", "发布笔记"])
+
+    if not is_logged_in:
+        await page.close()
+        raise RuntimeError("❌ 登录失败，请重新运行脚本")
+
+    print("✅ 登录成功！")
+    await page.close()
+
+
+async def publish_note(page, title: str, content: str):
+    """执行发布笔记的完整流程"""
+    # 步骤1：点击"发布笔记"
+    print("📝 步骤1：进入发布页面...")
+    await page.click('text=发布笔记')
+    await page.wait_for_load_state("networkidle")
+    await page.wait_for_timeout(3000)
+
+    # 调试：截图并打印当前URL
+    # print(f"  🔗 当前URL: {page.url}")
+    # await page.screenshot(path="debug_step1.png")
+    # print("  📸 已截图 debug_step1.png")
+
+    # 步骤2：点击"写长文"（第6个 .creator-tab）
+    print("📝 步骤2：点击写长文...")
+    await page.locator('.header-tabs .creator-tab').nth(6).click()
+    print("  ✅ 点击成功")
+    await page.wait_for_load_state("networkidle")
+    await page.wait_for_timeout(2000)
+
+    # 步骤3：如果有"新的创作"或"开始创作"按钮，点击它
+    for btn_text in ["新的创作", "开始创作"]:
+        try:
+            btn = page.get_by_text(btn_text, exact=True)
+            if await btn.is_visible(timeout=3000):
+                print(f"📝 步骤3：点击'{btn_text}'...")
+                await btn.click()
+                await page.wait_for_load_state("networkidle")
+                await page.wait_for_timeout(2000)
+                break
+        except Exception:
+            pass
+
+    # 步骤4：输入标题
+    print(f"📝 步骤4：输入标题: {title}")
+    title_input = page.locator('textarea[placeholder*="标题"]').first
+    if not await title_input.is_visible(timeout=3000):
+        title_input = page.locator('[contenteditable="true"]').first
+    await title_input.click()
+    await title_input.fill("")
+    await title_input.fill(title)
+    await page.wait_for_timeout(1000)
+
+    # 步骤5：输入正文
+    print("📝 步骤5：输入正文...")
+    editor = page.locator('[contenteditable="true"]').last
+    await editor.click()
+    await page.keyboard.press("Control+a")
+    await page.keyboard.press("Delete")
+    # 用 insertText 直接输入，不需要 clipboard 权限
+    await page.keyboard.insert_text(content)
+    await page.wait_for_timeout(2000)
+
+    # 步骤6：一键排版
+    print("📝 步骤6：一键排版...")
+    try:
+        format_btn = page.get_by_text("一键排版")
+        if await format_btn.is_visible(timeout=5000):
+            await format_btn.click()
+            await page.wait_for_timeout(3000)
+            print("  ✅ 排版完成")
+    except Exception:
+        print("  ⚠️ 未找到一键排版按钮，跳过")
+
+    # 步骤7：下一步
+    print("📝 步骤7：点击下一步...")
+    next_btn = page.get_by_text("下一步")
+    await next_btn.click()
+    await page.wait_for_load_state("networkidle")
+    await page.wait_for_timeout(2000)
+
+    # 步骤8：发布
+    print("📝 步骤8：点击发布...")
+    publish_btn = page.get_by_role("button", name="发布")
+    if not await publish_btn.is_visible(timeout=3000):
+        publish_btn = page.get_by_text("发布")
+    await publish_btn.click()
+    await page.wait_for_timeout(3000)
+
+    print("✅ 发布完成！")
+
+
 async def main():
-    # 1. 读取本地 md 文件
+    # 1. 读取 md 文件
     print(f"📖 正在读取文件: {MD_FILE_PATH}")
     article = read_md_file(MD_FILE_PATH)
     print(f"✅ 标题: {article['title']}")
     print(f"✅ 内容长度: {len(article['content'])} 字符")
 
-    # 2. 初始化大模型
-    llm = ChatOpenAI(model="mimo-v2.5", base_url=BASE_URL)
+    # 2. 创建持久化浏览器目录
+    Path(USER_DATA_DIR).mkdir(exist_ok=True)
+    print(f"📂 浏览器数据目录: {USER_DATA_DIR}")
 
-    # 3. 构建任务描述（把标题和内容直接塞给 agent）
-    task = f"""
-请严格按照以下步骤操作小红书创作者平台：
-
-第1步：打开浏览器，访问 https://creator.xiaohongshu.com/new/home
-第2步：等页面加载完成后，在页面上找到"发布笔记"的区域或菜单，点击进入
-第3步：找到"写长文"按钮，点击它
-第4步：如果看到"新的创作"或类似按钮，点击它开始新的长文创作
-
-第5步：在标题输入框中填入以下标题文字：
-{article['title']}
-
-第6步：在正文/内容编辑区域中，填入以下文章内容：
-{article['content']}
-
-第7步：找到"一键排版"按钮，点击它进行排版
-第8步：排版完成后，找到"下一步"按钮，点击它
-第9步：最后找到"发布"按钮，点击它完成发布
-
-注意事项：
-- 每一步都要等页面加载完成后再操作
-- 如果遇到弹窗或确认框，点击确认/确定
-- 如果某一步操作失败，尝试重试一次
-- 登录可能需要你手动扫码确认
-- 如果遇到任何验证环节，请暂停等待用户操作
-"""
-
-    # 4. 创建 Agent 并执行
-    agent = Agent(
-        task=task,
-        llm=llm,
-        save_conversation_path="conversation_log",  # 保存对话日志方便调试
+    # 3. 启动浏览器
+    print("\n🌐 正在启动浏览器...")
+    p = await async_playwright().start()
+    context = await p.chromium.launch_persistent_context(
+        user_data_dir=USER_DATA_DIR,
+        headless=False,
     )
 
-    print("\n🚀 开始自动化发布流程...")
-    print("⚠️  如果需要登录或验证，请在浏览器中手动操作\n")
-    result = await agent.run()
-    print("\n📋 执行结果:")
-    print(result)
+    try:
+        # 4. 检查登录状态
+        await ensure_logged_in(context)
+
+        # 5. 打开新页面执行发布
+        page = await context.new_page()
+        await page.goto("https://creator.xiaohongshu.com/new/home", wait_until="networkidle", timeout=30000)
+        await page.wait_for_timeout(2000)
+
+        # 6. 执行发布
+        await publish_note(page, article["title"], article["content"])
+
+        await page.close()
+    finally:
+        await context.close()
+        await p.stop()
 
 
 if __name__ == "__main__":
