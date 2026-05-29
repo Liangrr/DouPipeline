@@ -1,40 +1,34 @@
 import asyncio
+import json
 import os
 from pathlib import Path
 from playwright.async_api import async_playwright
 
 # ==================== 配置区 ====================
-MD_FILE_PATH = "/Users/asuria/Desktop/browser/每日热搜文案.md"
+MD_FILE_PATH = "/Users/asuria/Desktop/browser/everday_hot.json" 
 USER_DATA_DIR = os.path.join(os.path.dirname(__file__), "browser_profile")
 
 
-def read_md_file(file_path: str) -> dict:
-    """读取 md 文件，提取 **标题：** 和 **正文：** 的内容"""
+def read_json_file(file_path: str) -> dict:
+    """读取 JSON 文件，提取 title 和 content"""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"找不到文件: {file_path}")
 
     with open(file_path, "r", encoding="utf-8") as f:
-        text = f.read()
+        data = json.load(f)
 
-    title = ""
-    body = ""
-
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("**标题：**"):
-            title = stripped.replace("**标题：**", "").strip()
-        elif stripped.startswith("**正文：**"):
-            body = stripped.replace("**正文：**", "").strip()
+    title = data.get("title", "")
+    content = data.get("content", "")
 
     if not title:
-        raise ValueError("未找到 **标题：** 行")
-    if not body:
-        raise ValueError("未找到 **正文：** 行")
+        raise ValueError("未找到 title 字段")
+    if not content:
+        raise ValueError("未找到 content 字段")
 
     if len(title) > 20:
         title = title[:20]
 
-    return {"title": title, "content": body}
+    return {"title": title, "content": content}
 
 
 async def ensure_logged_in(context):
@@ -141,15 +135,26 @@ async def publish_note(page, title: str, content: str):
     print("📝 步骤8：点击发布...")
     submit_btn = page.get_by_text("发布", exact=True)
     await submit_btn.click()
-    print("  ✅ 点击成功")
-    await page.wait_for_timeout(2000)
+    print("  ⏳ 等待发布完成（含图片上传）...")
+    # 等待"发布成功"或页面跳转，最多等 120 秒
+    try:
+        await page.get_by_text("发布成功").wait_for(state="visible", timeout=120000)
+        print("  ✅ 检测到「发布成功」")
+    except Exception:
+        # 没有明确提示，等页面跳转（URL 变化）
+        current_url = page.url
+        try:
+            await page.wait_for_url(lambda url: url != current_url, timeout=120000)
+        except Exception:
+            await page.wait_for_timeout(10000)
+        print("  ✅ 页面已跳转，视为发布成功")
 
     print("✅ 发布完成！")
 
 async def main():
     # 1. 读取 md 文件
     print(f"📖 正在读取文件: {MD_FILE_PATH}")
-    article = read_md_file(MD_FILE_PATH)
+    article = read_json_file(MD_FILE_PATH)
     print(f"✅ 标题: {article['title']}")
     print(f"✅ 内容长度: {len(article['content'])} 字符")
 
