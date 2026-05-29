@@ -4,7 +4,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 # ==================== 配置区 ====================
-MD_FILE_PATH = "/Users/asuria/Desktop/browser/每日热搜文案-2026-05-29.md"
+MD_FILE_PATH = "/Users/asuria/Desktop/browser/每日热搜文案.md"
 USER_DATA_DIR = os.path.join(os.path.dirname(__file__), "browser_profile")
 
 
@@ -86,7 +86,7 @@ async def publish_note(page, title: str, content: str):
     await page.locator('.header-tabs .creator-tab').nth(6).click()
     print("  ✅ 点击成功")
     await page.wait_for_load_state("networkidle")
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(1000)
 
     # 步骤3：如果有"新的创作"或"开始创作"按钮，点击它
     for btn_text in ["新的创作", "开始创作"]:
@@ -96,7 +96,7 @@ async def publish_note(page, title: str, content: str):
                 print(f"📝 步骤3：点击'{btn_text}'...")
                 await btn.click()
                 await page.wait_for_load_state("networkidle")
-                await page.wait_for_timeout(2000)
+                await page.wait_for_timeout(1000)
                 break
         except Exception:
             pass
@@ -118,7 +118,7 @@ async def publish_note(page, title: str, content: str):
     await page.keyboard.press("Control+a")
     await page.keyboard.press("Delete")
     await page.keyboard.insert_text(content)
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(1000)
 
     # 步骤6：一键排版
     print("📝 步骤6：一键排版...")
@@ -136,7 +136,7 @@ async def publish_note(page, title: str, content: str):
     next_btn = page.get_by_text("下一步")
     await next_btn.click()
     await page.wait_for_load_state("networkidle")
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(5000)
 
     # 步骤8：点击发布（closed shadow root 已被劫持为 open，可直接选择）
     print("📝 步骤8：点击发布...")
@@ -146,6 +146,8 @@ async def publish_note(page, title: str, content: str):
     await page.wait_for_timeout(3000)
 
     print("✅ 发布完成！")
+
+    # 帮我执行删除文件
 
 
 async def main():
@@ -189,6 +191,10 @@ async def main():
 
         # 6. 执行发布
         await publish_note(page, article["title"], article["content"])
+
+        # 7. 发布完成后删除 md 文件
+        os.remove(MD_FILE_PATH)
+        print(f"🗑️ 已删除: {MD_FILE_PATH}")
 
         await page.close()
     finally:
