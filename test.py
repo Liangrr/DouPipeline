@@ -81,11 +81,6 @@ async def publish_note(page, title: str, content: str):
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(3000)
 
-    # 调试：截图并打印当前URL
-    # print(f"  🔗 当前URL: {page.url}")
-    # await page.screenshot(path="debug_step1.png")
-    # print("  📸 已截图 debug_step1.png")
-
     # 步骤2：点击"写长文"（第6个 .creator-tab）
     print("📝 步骤2：点击写长文...")
     await page.locator('.header-tabs .creator-tab').nth(6).click()
@@ -122,7 +117,6 @@ async def publish_note(page, title: str, content: str):
     await editor.click()
     await page.keyboard.press("Control+a")
     await page.keyboard.press("Delete")
-    # 用 insertText 直接输入，不需要 clipboard 权限
     await page.keyboard.insert_text(content)
     await page.wait_for_timeout(2000)
 
@@ -144,12 +138,11 @@ async def publish_note(page, title: str, content: str):
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(2000)
 
-    # 步骤8：发布
+    # 步骤8：点击发布（closed shadow root 已被劫持为 open，可直接选择）
     print("📝 步骤8：点击发布...")
-    publish_btn = page.get_by_role("button", name="发布")
-    if not await publish_btn.is_visible(timeout=3000):
-        publish_btn = page.get_by_text("发布")
-    await publish_btn.click()
+    submit_btn = page.get_by_text("发布", exact=True)
+    await submit_btn.click()
+    print("  ✅ 点击成功")
     await page.wait_for_timeout(3000)
 
     print("✅ 发布完成！")
@@ -173,6 +166,17 @@ async def main():
         user_data_dir=USER_DATA_DIR,
         headless=False,
     )
+
+    # 劫持 attachShadow，将 closed 强制改为 open，使 Playwright 可穿透
+    await context.add_init_script("""
+        const original = Element.prototype.attachShadow;
+        Element.prototype.attachShadow = function(opts) {
+            if (opts && opts.mode === 'closed') {
+                opts.mode = 'open';
+            }
+            return original.call(this, opts);
+        };
+    """)
 
     try:
         # 4. 检查登录状态
