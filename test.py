@@ -79,7 +79,7 @@ async def publish_note(page, title: str, content: str):
     print("📝 步骤1：进入发布页面...")
     await page.click('text=发布笔记')
     await page.wait_for_load_state("networkidle")
-    await page.wait_for_timeout(3000)
+    await page.wait_for_timeout(1000)
 
     # 步骤2：点击"写长文"（第6个 .creator-tab）
     print("📝 步骤2：点击写长文...")
@@ -109,7 +109,6 @@ async def publish_note(page, title: str, content: str):
     await title_input.click()
     await title_input.fill("")
     await title_input.fill(title)
-    await page.wait_for_timeout(1000)
 
     # 步骤5：输入正文
     print("📝 步骤5：输入正文...")
@@ -118,15 +117,15 @@ async def publish_note(page, title: str, content: str):
     await page.keyboard.press("Control+a")
     await page.keyboard.press("Delete")
     await page.keyboard.insert_text(content)
-    await page.wait_for_timeout(1000)
+    await page.wait_for_timeout(500)
 
     # 步骤6：一键排版
     print("📝 步骤6：一键排版...")
     try:
         format_btn = page.get_by_text("一键排版")
-        if await format_btn.is_visible(timeout=5000):
+        if await format_btn.is_visible(timeout=3000):
             await format_btn.click()
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(2000)
             print("  ✅ 排版完成")
     except Exception:
         print("  ⚠️ 未找到一键排版按钮，跳过")
@@ -136,19 +135,16 @@ async def publish_note(page, title: str, content: str):
     next_btn = page.get_by_text("下一步")
     await next_btn.click()
     await page.wait_for_load_state("networkidle")
-    await page.wait_for_timeout(5000)
+    await page.wait_for_timeout(1000)
 
     # 步骤8：点击发布（closed shadow root 已被劫持为 open，可直接选择）
     print("📝 步骤8：点击发布...")
     submit_btn = page.get_by_text("发布", exact=True)
     await submit_btn.click()
     print("  ✅ 点击成功")
-    await page.wait_for_timeout(3000)
+    await page.wait_for_timeout(2000)
 
     print("✅ 发布完成！")
-
-    # 帮我执行删除文件
-
 
 async def main():
     # 1. 读取 md 文件
