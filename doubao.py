@@ -17,6 +17,12 @@ PROMPT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao.j
 USER_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao_browser_profile")
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao_output")
 TIMEOUT_IMAGE = 180
+MAX_RETRY = 2  # 被拒绝时最多重试次数
+REFUSAL_KEYWORDS = [
+    "抱歉", "无法生成", "不能生成", "没办法生成", "生成不了",
+    "我无法", "我不能", "不可以", "不符合", "违反",
+    "sorry", "can't generate", "cannot generate", "unable to",
+]
 
 
 def load_prompts():
@@ -35,24 +41,33 @@ def clear_output_dir():
     print(f"🧹 已清空输出目录: {OUTPUT_DIR}")
 
 
-def ensure_logged_in(page):
-    page.goto(DOUBAO_URL, wait_until="domcontentloaded", timeout=60000)
-    page.wait_for_timeout(8000)
-
+def wait_for_input_box(page, timeout=10):
+    """轮询等待输入框出现，返回 True 如果找到"""
     input_selectors = [
         'textarea',
         '[contenteditable="true"]',
         'div[role="textbox"]',
         'textarea[placeholder]',
     ]
+    start = time.time()
+    while time.time() - start < timeout:
+        for sel in input_selectors:
+            try:
+                if page.locator(sel).first.is_visible(timeout=1000):
+                    return True
+            except Exception:
+                continue
+        page.wait_for_timeout(1000)
+    return False
 
-    for sel in input_selectors:
-        try:
-            if page.locator(sel).first.is_visible(timeout=3000):
-                print("🎉 已登录！（复用上次会话）")
-                return
-        except Exception:
-            continue
+
+def ensure_logged_in(page):
+    page.goto(DOUBAO_URL, wait_until="domcontentloaded", timeout=60000)
+
+    # 轮询检测登录状态，替代固定 8 秒等待
+    if wait_for_input_box(page, timeout=10):
+        print("🎉 已登录！（复用上次会话）")
+        return
 
     print("\n" + "=" * 60)
     print("⚠️  检测到未登录，请在上方浏览器中手动登录豆包：")
@@ -61,15 +76,10 @@ def ensure_logged_in(page):
     input("\n✅ 登录完成后按回车继续 >>> ")
 
     page.reload(wait_until="domcontentloaded", timeout=60000)
-    page.wait_for_timeout(5000)
 
-    for sel in input_selectors:
-        try:
-            if page.locator(sel).first.is_visible(timeout=3000):
-                print("✅ 登录成功！")
-                return
-        except Exception:
-            continue
+    if wait_for_input_box(page, timeout=8):
+        print("✅ 登录成功！")
+        return
 
     raise RuntimeError("❌ 登录失败，请重新运行脚本")
 
@@ -126,29 +136,86 @@ def input_prompt_and_submit(page, prompt):
 
     print(f"   正在键入 prompt（{len(prompt)} 字符）...")
     page.keyboard.type(prompt, delay=10)
-    page.wait_for_timeout(1000)
-
-    print("   等待 3 秒后发送...")
-    page.wait_for_timeout(3000)
+    page.wait_for_timeout(500)
 
     print("🚀 发送 prompt...")
-    page.keyboard.press("Enter")
-    page.wait_for_timeout(3000)
-
+    # 先尝试点击发送按钮，比按 Enter 更可靠
+    sent = False
     for sel in [
         'button[aria-label="发送"]',
         'button:has-text("发送")',
     ]:
         try:
             btn = page.locator(sel).first
-            if btn.is_visible(timeout=2000):
+            if btn.is_visible(timeout=1500):
                 btn.click()
                 print(f"   点击发送按钮: {sel}")
+                sent = True
                 break
         except Exception:
             continue
 
+    if not sent:
+        page.keyboard.press("Enter")
+
+    page.wait_for_timeout(1000)
+
     return True
+
+
+def check_refusal(page):
+    """检查豆包最新回复是否包含拒绝话术"""
+    try:
+        # 获取所有消息气泡（通常 AI 回复有特定 class 或 role）
+        # 豆包的消息容器可能的选择器
+        message_selectors = [
+            '[data-testid="chat-message-content"]',
+            '.message-content',
+            '[class*="message"]',
+            '[class*="reply"]',
+            '[class*="response"]',
+        ]
+
+        all_text = ""
+        for sel in message_selectors:
+            try:
+                msgs = page.locator(sel)
+                count = msgs.count()
+                if count > 0:
+                    # 只看最后一条消息
+                    last_msg = msgs.nth(count - 1)
+                    text = last_msg.inner_text(timeout=3000)
+                    if text and len(text) > 5:
+                        all_text = text
+                        break
+            except Exception:
+                continue
+
+        if not all_text:
+            # 兜底：获取页面最后出现的文本块
+            try:
+                # 获取所有可见文本节点
+                all_text = page.locator('body').inner_text(timeout=5000)
+            except Exception:
+                return False
+
+        # 检查拒绝关键词
+        text_lower = all_text.lower()
+        for kw in REFUSAL_KEYWORDS:
+            if kw.lower() in text_lower:
+                print(f"🚫 检测到拒绝关键词: 「{kw}」")
+                # 截取相关上下文
+                idx = text_lower.find(kw.lower())
+                start = max(0, idx - 30)
+                end = min(len(all_text), idx + len(kw) + 30)
+                context = all_text[start:end].replace("\n", " ")
+                print(f"   上下文: ...{context}...")
+                return True
+
+    except Exception as e:
+        print(f"   检测拒绝时异常: {e}")
+
+    return False
 
 
 def find_new_image(page, old_srcs):
@@ -198,9 +265,9 @@ def wait_for_image_and_save(page, index):
     start = time.time()
     found_image = None
 
-    # 等待新图片出现
+    # 等待新图片出现（轮询间隔从 3s 缩短到 2s）
     while time.time() - start < TIMEOUT_IMAGE:
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(2000)
         src = find_new_image(page, old_srcs)
         if src:
             found_image = src
@@ -214,23 +281,9 @@ def wait_for_image_and_save(page, index):
         print("❌ 未检测到生成的图片")
         return False
 
-    # 等图片 src 稳定
+    # 等图片 src 稳定（从 2 次×3s 缩短到 1 次×2s）
     print("   确认图片生成完毕...")
-    stable_count = 0
-    last_src = found_image
-    while stable_count < 2:
-        page.wait_for_timeout(3000)
-        src = find_new_image(page, old_srcs)
-        current_src = src or last_src
-        if current_src == last_src:
-            stable_count += 1
-        else:
-            stable_count = 0
-            last_src = current_src
-            found_image = current_src
-            print(f"   图片仍在更新，继续等待...")
-
-    page.wait_for_timeout(3000)
+    page.wait_for_timeout(2000)
 
     # ========== 点击图片打开预览，拦截高清原图响应 ==========
     print("🔍 点击图片打开预览...")
@@ -260,7 +313,7 @@ def wait_for_image_and_save(page, index):
 
         # 等待预览弹窗出现
         print("   等待预览弹窗...")
-        page.wait_for_timeout(5000)
+        page.wait_for_timeout(2000)
 
         # 尝试点击"查看原图"或类似按钮
         for sel in [
@@ -272,17 +325,17 @@ def wait_for_image_and_save(page, index):
         ]:
             try:
                 btn = page.locator(sel).first
-                if btn.is_visible(timeout=2000):
+                if btn.is_visible(timeout=1500):
                     print(f"   点击「查看原图」...")
                     btn.click()
-                    page.wait_for_timeout(5000)
+                    page.wait_for_timeout(3000)
                     break
             except Exception:
                 continue
 
         # 等待高清图加载完成
         print("   等待高清图加载...")
-        page.wait_for_timeout(8000)
+        page.wait_for_timeout(4000)
 
         page.remove_listener("response", on_response)
 
@@ -298,13 +351,13 @@ def wait_for_image_and_save(page, index):
 
         # 关闭预览
         page.keyboard.press("Escape")
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(1000)
 
     except Exception as e:
         print(f"   预览流程异常: {e}")
         try:
             page.keyboard.press("Escape")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(500)
         except Exception:
             pass
 
@@ -361,9 +414,9 @@ def main():
         try:
             ensure_logged_in(page)
             close_popups(page)
-            page.wait_for_timeout(1000)
 
             success_count = 0
+            skip_count = 0
             for i, prompt in enumerate(prompts, start=1):
                 print(f"\n{'=' * 60}")
                 print(f"📌 [{i}/{total}] Prompt: {prompt[:60]}...")
@@ -371,23 +424,79 @@ def main():
 
                 if i > 1:
                     page.goto(DOUBAO_URL, wait_until="domcontentloaded", timeout=60000)
-                    page.wait_for_timeout(5000)
+                    wait_for_input_box(page, timeout=8)
 
-                if input_prompt_and_submit(page, prompt):
+                # --- 重试逻辑 ---
+                retry_suffixes = [
+                    "",
+                    "",
+                ]
+                current_prompt = prompt
+                saved = False
+
+                for attempt in range(MAX_RETRY + 1):
+                    if attempt > 0:
+                        suffix = retry_suffixes[(attempt - 1) % len(retry_suffixes)]
+                        current_prompt = prompt + suffix
+                        print(f"\n🔄 第 {attempt} 次重试: {current_prompt[:60]}...")
+                        # 开一个新对话
+                        page.goto(DOUBAO_URL, wait_until="domcontentloaded", timeout=60000)
+                        wait_for_input_box(page, timeout=8)
+
+                    if not input_prompt_and_submit(page, current_prompt):
+                        print(f"❌ [{i}] 提交 prompt 失败")
+                        break
+
+                    # 等待豆包回复（轮询检查，替代固定 12 秒）
+                    print("   等待豆包回复...")
+                    refused = False
+                    for poll_i in range(3):  # 最多 3 次 × 4 秒 = 12 秒
+                        page.wait_for_timeout(4000)
+                        if check_refusal(page):
+                            refused = True
+                            break
+                        # 如果图片已经出现了，说明没有拒绝
+                        old_srcs_check = set()
+                        if find_new_image(page, old_srcs_check):
+                            print(f"   已检测到图片，跳过剩余检查")
+                            break
+                        print(f"   等待中... ({(poll_i + 1) * 4}s/12s)")
+
+                    if refused:
+                        print(f"⚠️ [{i}] 豆包拒绝生成 (attempt {attempt + 1}/{MAX_RETRY + 1})")
+                        if attempt < MAX_RETRY:
+                            print("   将尝试换一种描述方式重试...")
+                            continue
+                        else:
+                            print(f"⏭️ [{i}] 重试 {MAX_RETRY} 次仍被拒绝，跳过此 prompt")
+                            skip_count += 1
+                            break
+
+                    # 没被拒绝，等待图片生成
                     if wait_for_image_and_save(page, i):
                         success_count += 1
+                        saved = True
+                        break
                     else:
-                        print(f"❌ [{i}] 图片生成/保存失败")
-                else:
-                    print(f"❌ [{i}] 提交 prompt 失败")
+                        print(f"⚠️ [{i}] 图片生成超时 (attempt {attempt + 1}/{MAX_RETRY + 1})")
+                        if attempt < MAX_RETRY:
+                            print("   将重试...")
+                            continue
+
+                if not saved and not skip_count:
+                    print(f"❌ [{i}] 图片生成/保存失败（已重试）")
 
             print(f"\n{'=' * 60}")
-            print(f"✨ 全部完成！成功: {success_count}/{total}")
+            print(f"✨ 全部完成！成功: {success_count}/{total}", end="")
+            if skip_count:
+                print(f"，跳过: {skip_count}")
+            else:
+                print()
             print(f"{'=' * 60}")
 
         finally:
             try:
-                page.wait_for_timeout(5000)
+                page.wait_for_timeout(1000)
                 page.close()
             except Exception:
                 pass

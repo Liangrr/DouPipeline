@@ -69,10 +69,16 @@ def get_output_images() -> list:
 async def ensure_logged_in(page):
     """检查登录状态，未登录则等待用户手动登录（抖音 APP 扫码）"""
     await page.goto(UPLOAD_URL, wait_until="domcontentloaded", timeout=30000)
-    await page.wait_for_timeout(3000)
+
+    # 轮询检测登录状态，替代固定 3 秒等待
+    for _ in range(6):
+        await page.wait_for_timeout(1000)
+        page_text = await page.content()
+        if any(kw in page_text for kw in ["发布作品", "内容管理", "数据中心", "发布文章", "发布图文"]):
+            print("🎉 已登录！")
+            return
 
     page_text = await page.content()
-    # 登录后页面会出现这些元素
     is_logged_in = any(kw in page_text for kw in ["发布作品", "内容管理", "数据中心", "发布文章", "发布图文"])
 
     if is_logged_in:
@@ -89,7 +95,7 @@ async def ensure_logged_in(page):
 
     # 验证登录
     await page.reload(wait_until="domcontentloaded", timeout=30000)
-    await page.wait_for_timeout(3000)
+    await page.wait_for_timeout(2000)
     page_text = await page.content()
     is_logged_in = any(kw in page_text for kw in ["发布作品", "内容管理", "数据中心", "发布文章", "发布图文"])
 
@@ -114,7 +120,6 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
         # 备用：尝试其他选择器
         await page.click('text=发布文章')
     await page.wait_for_load_state("domcontentloaded")
-    await page.wait_for_timeout(3000)
 
     # 步骤2：点击"我要发文"
     print("📝 步骤2：点击「我要发文」...")
@@ -126,7 +131,6 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
     except Exception:
         await page.click('text=我要发文')
     await page.wait_for_load_state("domcontentloaded")
-    await page.wait_for_timeout(3000)
 
     # 步骤3：填充文章标题
     print(f"📝 步骤3：填充文章标题: {title}")
@@ -222,7 +226,7 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
     if not confirmed:
         print("  ⚠️ 未找到确定按钮，请手动点击")
 
-    await page.wait_for_timeout(3000)
+    await page.wait_for_timeout(1500)
 
     # 步骤8：点击发布按钮
     print("📝 步骤8：点击「发布」...")
@@ -274,7 +278,7 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
     except Exception:
         await page.click('text=发布图文')
     await page.wait_for_load_state("domcontentloaded")
-    await page.wait_for_timeout(3000)
+    await page.wait_for_timeout(1500)
 
     # 步骤2：点击"上传图文"，上传所有图片
     print("📝 步骤2：点击「上传图文」并上传图片...")
@@ -300,7 +304,7 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
             print(f"  ❌ 图片上传失败: {e2}")
 
     # 等待上传完成和页面加载"编辑图文"区域
-    await page.wait_for_timeout(5000)
+    await page.wait_for_timeout(3000)
 
     # 步骤3：填充标题（输入框 placeholder: "请输入图文标题（选填）最多30字"）
     if title:
@@ -325,8 +329,6 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
                 print("  ✅ 标题已通过备用方式填入")
             except Exception:
                 print("  ❌ 标题填入失败")
-
-    await page.wait_for_timeout(1000)
 
     # 步骤4：填充描述（contenteditable 编辑器区域）
     # 优先使用 content，如果没有则用 subtitle 或 summary
@@ -361,7 +363,7 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
         except Exception as e:
             print(f"  ❌ 描述填入失败: {e}")
 
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(1000)
 
     # 步骤5：点击发布
     print("📝 步骤5：点击「发布」...")
@@ -404,7 +406,7 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
                 await page.wait_for_url(lambda url: url != current_url, timeout=60000)
                 print("  ✅ 页面已跳转，发布完成")
             except Exception:
-                await page.wait_for_timeout(1000)
+                await page.wait_for_timeout(500)
                 print("  ✅ 等待结束，视为发布完成")
 
     print("✅ 全部流程执行完毕！")
