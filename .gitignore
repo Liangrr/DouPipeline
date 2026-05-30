@@ -11,5 +11,5 @@ wheels/
 
 /conversation_log/
 /browser_profile/
-
+/byte_browser_profile/
 /*.json
