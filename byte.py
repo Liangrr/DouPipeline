@@ -167,12 +167,90 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
     await page.wait_for_timeout(500)
     print("  ✅ 正文已填入")
 
-    # 步骤6：上传封面图片
+    # 步骤6：选择音乐（选择音乐 → 收藏 → 悬停第一条 → 点击使用）
+    print("📝 步骤6：选择音乐...")
+    try:
+        # 6.1 点击「选择音乐」按钮
+        print("  🎵 点击「选择音乐」...")
+        music_btn = page.get_by_text("选择音乐", exact=False).last
+        await music_btn.wait_for(state="visible", timeout=10000)
+        await music_btn.click()
+        print("  ✅ 已点击「选择音乐」，等待弹窗加载...")
+
+        # 6.2 等弹窗出现，点击「收藏」
+        await page.wait_for_timeout(3000)
+        fav_btn = page.get_by_text("收藏", exact=True).first
+        await fav_btn.wait_for(state="visible", timeout=10000)
+        await fav_btn.click()
+        print("  ✅ 已点击「收藏」，等待列表加载...")
+
+        # 6.3 等待收藏列表加载完成，点击第一个「使用」按钮
+        await page.wait_for_timeout(3000)
+
+        # 「使用」按钮是 SPAN 标签，默认隐藏，用 JS 直接触发点击
+        use_span = page.locator('span:text("使用")').first
+        await use_span.wait_for(state="attached", timeout=10000)
+        await use_span.dispatch_event("click")
+        print("  ✅ 已点击「使用」，弹窗关闭")
+
+        await page.wait_for_timeout(2000)
+        print("  ✅ 音乐选择完成")
+    except Exception as e:
+        print(f"  ⚠️ 选择音乐失败: {e}")
+
+    await page.wait_for_timeout(1500)
+
+    # 步骤7：自主声明（点击请选择自主声明 → 弹窗中选内容由AI生成 → 确定）
+    print("📝 步骤7：设置自主声明...")
+    try:
+        # 7.1 点击「请选择自主声明」
+        declare_btn = page.get_by_text("请选择自主声明", exact=False).first
+        await declare_btn.wait_for(state="visible", timeout=10000)
+        await declare_btn.click()
+        print("  ✅ 已点击「请选择自主声明」，等待弹窗加载...")
+
+        # 7.2 等弹窗出现，点击「内容由AI生成」
+        await page.wait_for_timeout(3000)
+
+        # 调试：查看有多少个「内容由AI生成」
+        ai_options = page.get_by_text("内容由AI生成", exact=False)
+        ai_count = await ai_options.count()
+        print(f"  🔍 找到 {ai_count} 个「内容由AI生成」元素")
+        for i in range(ai_count):
+            item = ai_options.nth(i)
+            try:
+                text = await item.text_content()
+                visible = await item.is_visible(timeout=1000)
+                tag = await item.evaluate("el => el.tagName")
+                print(f"     [{i}] 标签: {tag} | 文本: 「{text}」 | 可见: {visible}")
+            except Exception:
+                print(f"     [{i}] 无法获取信息")
+
+        # 用 dispatch_event 点击第一个
+        ai_option = page.get_by_text("内容由AI生成", exact=False).first
+        await ai_option.wait_for(state="attached", timeout=10000)
+        await ai_option.dispatch_event("click")
+        print("  ✅ 已选择「内容由AI生成」")
+        await page.wait_for_timeout(1000)
+
+        # 7.3 点击「确定」
+        confirm_btn = page.get_by_text("确定", exact=True).first
+        await confirm_btn.wait_for(state="attached", timeout=5000)
+        await confirm_btn.dispatch_event("click")
+        print("  ✅ 已点击「确定」，弹窗关闭")
+        await page.wait_for_timeout(1000)
+        print("  ✅ 自主声明设置完成")
+    except Exception as e:
+        print(f"  ⚠️ 自主声明设置失败: {e}")
+
+    await page.wait_for_timeout(1000)
+
+    # 步骤8：上传封面图片
     if cover_image:
         if not os.path.exists(cover_image):
             print(f"⚠️ 封面图片不存在: {cover_image}，跳过")
         else:
-            print(f"📝 步骤6：上传封面图片: {cover_image}")
+            print(f"📝 步骤8：上传封面图片: {cover_image}")
             uploaded = False
 
             # 点击上传按钮，拦截文件选择对话框
@@ -195,10 +273,10 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
             else:
                 print("  ✅ 封面上传完成")
     else:
-        print("📝 步骤6：未配置封面图片，跳过")
+        print("📝 步骤8：未配置封面图片，跳过")
 
-    # 步骤7：等待截图/裁剪弹窗 → 点击确定
-    print("📝 步骤7：等待截图弹窗，点击「确定」...")
+    # 步骤9：等待截图/裁剪弹窗 → 点击确定
+    print("📝 步骤9：等待截图弹窗，点击「确定」...")
     await page.wait_for_timeout(2000)
     confirmed = False
     for text in ["确定", "确认", "完成", "OK"]:
@@ -228,8 +306,8 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
 
     await page.wait_for_timeout(1500)
 
-    # 步骤8：点击发布按钮
-    print("📝 步骤8：点击「发布」...")
+    # 步骤10：点击发布按钮
+    print("📝 步骤10：点击「发布」...")
     published = False
     for text in ["发布", "发表", "提交发布"]:
         try:
@@ -245,7 +323,7 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
     if not published:
         print("  ⚠️ 未找到发布按钮，请手动点击")
     else:
-        # 步骤9：等待发布完成
+        # 步骤11：等待发布完成
         print("  ⏳ 等待发布完成...")
         try:
             # 等待"发布成功"提示或页面跳转
@@ -365,8 +443,86 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
 
     await page.wait_for_timeout(1000)
 
-    # 步骤5：点击发布
-    print("📝 步骤5：点击「发布」...")
+    # 步骤5：选择音乐（选择音乐 → 收藏 → 悬停第一条 → 点击使用）
+    print("📝 步骤5：选择音乐...")
+    try:
+        # 5.1 点击「选择音乐」按钮
+        print("  🎵 点击「选择音乐」...")
+        music_btn = page.get_by_text("选择音乐", exact=False).last
+        await music_btn.wait_for(state="visible", timeout=10000)
+        await music_btn.click()
+        print("  ✅ 已点击「选择音乐」，等待弹窗加载...")
+
+        # 5.2 等弹窗出现，点击「收藏」
+        await page.wait_for_timeout(3000)
+        fav_btn = page.get_by_text("收藏", exact=True).first
+        await fav_btn.wait_for(state="visible", timeout=10000)
+        await fav_btn.click()
+        print("  ✅ 已点击「收藏」，等待列表加载...")
+
+        # 5.3 等待收藏列表加载完成，点击第一个「使用」按钮
+        await page.wait_for_timeout(3000)
+
+        # 「使用」按钮是 SPAN 标签，默认隐藏，用 JS 直接触发点击
+        use_span = page.locator('span:text("使用")').first
+        await use_span.wait_for(state="attached", timeout=10000)
+        await use_span.dispatch_event("click")
+        print("  ✅ 已点击「使用」，弹窗关闭")
+
+        await page.wait_for_timeout(2000)
+        print("  ✅ 音乐选择完成")
+    except Exception as e:
+        print(f"  ⚠️ 选择音乐失败: {e}")
+
+    await page.wait_for_timeout(1500)
+
+    # 步骤6：自主声明（点击请选择自主声明 → 弹窗中选内容由AI生成 → 确定）
+    print("📝 步骤6：设置自主声明...")
+    try:
+        # 6.1 点击「请选择自主声明」
+        declare_btn = page.get_by_text("请选择自主声明", exact=False).first
+        await declare_btn.wait_for(state="visible", timeout=10000)
+        await declare_btn.click()
+        print("  ✅ 已点击「请选择自主声明」，等待弹窗加载...")
+
+        # 6.2 等弹窗出现，点击「内容由AI生成」
+        await page.wait_for_timeout(3000)
+
+        # 调试：查看有多少个「内容由AI生成」
+        ai_options = page.get_by_text("内容由AI生成", exact=False)
+        ai_count = await ai_options.count()
+        print(f"  🔍 找到 {ai_count} 个「内容由AI生成」元素")
+        for i in range(ai_count):
+            item = ai_options.nth(i)
+            try:
+                text = await item.text_content()
+                visible = await item.is_visible(timeout=1000)
+                tag = await item.evaluate("el => el.tagName")
+                print(f"     [{i}] 标签: {tag} | 文本: 「{text}」 | 可见: {visible}")
+            except Exception:
+                print(f"     [{i}] 无法获取信息")
+
+        # 用 dispatch_event 点击第一个
+        ai_option = page.get_by_text("内容由AI生成", exact=False).first
+        await ai_option.wait_for(state="attached", timeout=10000)
+        await ai_option.dispatch_event("click")
+        print("  ✅ 已选择「内容由AI生成」")
+        await page.wait_for_timeout(1000)
+
+        # 6.3 点击「确定」
+        confirm_btn = page.get_by_text("确定", exact=True).first
+        await confirm_btn.wait_for(state="attached", timeout=5000)
+        await confirm_btn.dispatch_event("click")
+        print("  ✅ 已点击「确定」，弹窗关闭")
+        await page.wait_for_timeout(1000)
+        print("  ✅ 自主声明设置完成")
+    except Exception as e:
+        print(f"  ⚠️ 自主声明设置失败: {e}")
+
+    await page.wait_for_timeout(1000)
+
+    # 步骤7：点击发布
+    print("📝 步骤7：点击「发布」...")
     published = False
 
     # 根据截图，发布按钮在右上角，绿色按钮
