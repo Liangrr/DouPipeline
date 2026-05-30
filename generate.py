@@ -9,7 +9,7 @@ BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1"
 MODEL = "mimo-v2.5"
 OUTPUT_PATH = "/Users/asuria/Desktop/browser/doubao.json"
 DEFAULT_SEND_TYPE = "image"
-DEFAULT_PROMPT_COUNT = 1
+DEFAULT_PROMPT_COUNT = 3
 
 
 # ==================== 角色定义 ====================
