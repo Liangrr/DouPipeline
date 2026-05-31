@@ -195,20 +195,43 @@ async def publish_note(page, title: str, content: str, tags: list = None):
 
     # 步骤10：点击发布
     print("📝 步骤10：点击发布...")
-    # 尝试多种选择器定位发布按钮
+    await page.wait_for_timeout(2000)
+    # 尝试多种选择器定位发布按钮（按优先级排列，避开侧边栏的「发布笔记」）
+    published = False
     for sel in [
-        'button:has-text("发布")',
-        'div:has-text("发布"):not(:has(div))',
-        page.get_by_text("发布", exact=True),
+        page.get_by_role("button", name="发布"),                   # 语义化匹配，最可靠
+        page.locator('.publish-btn, .submit-btn, [class*="publish"]').first,  # 常见 CSS class
+        page.locator('button:has-text("发布"):not(:has-text("笔记"))').first,  # 排除「发布笔记」
+        page.locator('button:has-text("立即发布")').first,
+        page.locator('div.btn:has-text("发布")').first,
     ]:
         try:
-            btn = sel if not isinstance(sel, str) else page.locator(sel).first
-            if await btn.is_visible(timeout=3000):
-                await btn.click()
+            if await sel.is_visible(timeout=3000):
+                await sel.click()
                 print(f"  ✅ 已点击发布按钮")
+                published = True
                 break
         except Exception:
             continue
+
+    # 兜底：普通 click 不生效时，用 dispatch_event 强制触发
+    if not published:
+        print("  ⚠️ 普通点击未生效，尝试 dispatch_event...")
+        for sel in [
+            page.get_by_role("button", name="发布"),
+            page.locator('button:has-text("发布")').last,  # 最后一个，大概率是底部的发布按钮
+        ]:
+            try:
+                if await sel.is_visible(timeout=3000):
+                    await sel.dispatch_event("click")
+                    print(f"  ✅ 通过 dispatch_event 点击成功")
+                    published = True
+                    break
+            except Exception:
+                continue
+
+    if not published:
+        print("  ❌ 未找到发布按钮，请手动点击")
 
     await page.wait_for_timeout(2000)
 

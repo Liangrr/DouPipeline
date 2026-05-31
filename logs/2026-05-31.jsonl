@@ -30,3 +30,13 @@
 {"time": "2026-05-31 13:40:42", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
 {"time": "2026-05-31 13:41:21", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
 {"time": "2026-05-31 13:41:51", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 13:46:57", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "fail", "error": "No module named 'openai'"}
+{"time": "2026-05-31 13:47:32", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:48:09", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "fail", "error": "Page.goto: Target page, context or browser has been closed\nCall log:\n  - navigating to \"https://creator.xiaohongshu.com/new/home\", waiting until \"networkidle\"\n"}
+{"time": "2026-05-31 13:48:15", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "fail", "error": "No module named 'openai'"}
+{"time": "2026-05-31 13:49:35", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:50:24", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:53:54", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:54:20", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:56:53", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:57:20", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
