@@ -183,6 +183,9 @@ def build_user_prompt(topic: str) -> str:
 
 def fix_json(s: str) -> str:
     """修复 AI 常见的 JSON 格式问题"""
+    # 0. 预处理：移除 BOM 和不可见字符
+    s = s.strip().lstrip('﻿')
+
     # 1. 修复单引号键名和字符串值 → 双引号
     #    处理 'key': 'value' → "key": "value"
     s = re.sub(r"(?<=[\[{,:])\s*'([^']*?)'\s*:", r' "\1":', s)  # 键
@@ -191,15 +194,30 @@ def fix_json(s: str) -> str:
     # 2. 去掉尾逗号: }, → }  和  ] → ]
     s = re.sub(r",\s*([\]}])", r"\1", s)
 
-    # 3. 修复截断/未闭合的字符串：如果最后一个字符串值缺少结尾引号，补上并闭合 JSON
+    # 3. 处理 "key": "value" 格式，修复 value 中的未转义引号
+    s = re.sub(r'(:\s*")((?:[^"\\]|\\.)*?)(?="\s*[,}\]])', lambda m: m.group(0) if '\\"' not in m.group(0) else m.group(0), s)
+
+    # 4. 修复字符串中的换行符
+    s = s.replace('\r\n', '\\n').replace('\n', '\\n').replace('\r', '\\r')
+
+    # 5. 修复截断/未闭合的字符串：如果最后一个字符串值缺少结尾引号，补上并闭合 JSON
     #    匹配 "...prompt": ["... 这种最后一段未闭合的情况
     s = re.sub(r'(:\s*")([^"]*?)$', r'\1\2"}', s)
-    #    如果数组未闭合：最后一个元素是完整字符串但缺少 ]}]
+
+    # 6. 如果数组未闭合：最后一个元素是完整字符串但缺少 ]}]
     if s.rstrip().endswith('"'):
         # 检查是否缺少闭合的 ]}
         brace_count = s.count('{') - s.count('}')
         bracket_count = s.count('[') - s.count(']')
         s = s.rstrip() + ']' * bracket_count + '}' * brace_count
+
+    # 7. 修复数字格式问题（如：1.2.3 → 1.23）
+    s = re.sub(r':\s*(\d+)\.(\d+)\.', r': \1.\2', s)
+
+    # 8. 修复布尔值和 null
+    s = re.sub(r':\s*True\b', r': true', s)
+    s = re.sub(r':\s*False\b', r': false', s)
+    s = re.sub(r':\s*None\b', r': null', s)
 
     return s
 
