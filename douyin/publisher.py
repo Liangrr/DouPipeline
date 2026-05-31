@@ -182,7 +182,7 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
         await fav_btn.click()
         print("  ✅ 已点击「收藏」，等待列表加载...")
 
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(5000)
         use_span = page.locator('span:text("使用")').first
         await use_span.wait_for(state="attached", timeout=10000)
         await use_span.dispatch_event("click")
@@ -438,7 +438,7 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
         await fav_btn.click()
         print("  ✅ 已点击「收藏」，等待列表加载...")
 
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(5000)
         use_span = page.locator('span:text("使用")').first
         await use_span.wait_for(state="attached", timeout=10000)
         await use_span.dispatch_event("click")

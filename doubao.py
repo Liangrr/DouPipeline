@@ -10,6 +10,7 @@ import shutil
 import sys
 import time
 from pathlib import Path
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 # 导入账号管理模块
@@ -24,6 +25,8 @@ DOUBAO_URL = "https://www.doubao.com/chat"
 USER_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao_browser_profile")
 TIMEOUT_IMAGE = 180
 MAX_RETRY = 2  # 被拒绝时最多重试次数
+MIN_IMAGES_REQUIRED = 1  # 最少需要生成的图片数量
+DEFAULT_IMAGE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "default_cover.jpg")  # 默认封面图
 REFUSAL_KEYWORDS = [
     "抱歉", "无法生成", "不能生成", "没办法生成", "生成不了",
     "我无法", "我不能", "不可以", "不符合", "违反",
@@ -258,6 +261,23 @@ def find_new_image(page, old_srcs):
     return None
 
 
+def remove_watermark(image_path):
+    """裁切图片左上角水印区域"""
+    try:
+        img = Image.open(image_path)
+        w, h = img.size
+        # 左上角裁切：去掉约 12% 宽度、6% 高度的水印区域
+        crop_w = int(w * 0.12)
+        crop_h = int(h * 0.06)
+        cropped = img.crop((crop_w, crop_h, w, h))
+        cropped.save(image_path, quality=95)
+        print(f"   ✂️ 已裁切左上角水印 ({crop_w}×{crop_h}px)")
+        return True
+    except Exception as e:
+        print(f"   ⚠️ 去水印失败: {e}")
+        return False
+
+
 def wait_for_image_and_save(page, index):
     """等待图片完全生成，点击预览获取高清图并保存"""
     print(f"⏳ 等待图片生成（超时 {TIMEOUT_IMAGE} 秒）...")
@@ -360,8 +380,7 @@ def wait_for_image_and_save(page, index):
                 f.write(best["body"])
             saved = True
             print(f"✅ 高清图已保存！ ({os.path.getsize(output_path) / 1024:.1f} KB)")
-
-        # 关闭预览
+            remove_watermark(output_path)
         page.keyboard.press("Escape")
         page.wait_for_timeout(1000)
 
@@ -383,6 +402,7 @@ def wait_for_image_and_save(page, index):
                     f.write(resp.body())
                 saved = True
                 print(f"✅ 图片已保存！ ({os.path.getsize(output_path) / 1024:.1f} KB)")
+                remove_watermark(output_path)
         except Exception as e:
             print(f"   下载异常: {e}")
 
@@ -390,6 +410,76 @@ def wait_for_image_and_save(page, index):
         print(f"📁 路径: {output_path}")
         return True
     return False
+
+
+def simplify_prompt(prompt: str) -> str:
+    """简化 prompt，移除可能触发拒绝的敏感词"""
+    # 敏感词替换映射
+    replacements = {
+        "比基尼": "泳装",
+        "泳衣": "夏日服装",
+        "露背": "时尚设计",
+        "性感": "优雅",
+        "身材": "气质",
+        "曲线": "身姿",
+        "胸部": "",
+        "丰满": "匀称",
+        "纤细": "修长",
+    }
+
+    simplified = prompt
+    for old, new in replacements.items():
+        simplified = simplified.replace(old, new)
+
+    # 如果 prompt 太长，截取关键部分
+    if len(simplified) > 300:
+        # 保留开头的场景描述和结尾的技术参数
+        parts = simplified.split("，")
+        if len(parts) > 6:
+            simplified = "，".join(parts[:4]) + "，" + "，".join(parts[-2:])
+
+    return simplified
+
+
+def use_default_image(index: int) -> bool:
+    """使用默认图片作为兜底"""
+    output_path = os.path.join(OUTPUT_DIR, f"output{index}.jpg")
+
+    if os.path.exists(DEFAULT_IMAGE_PATH):
+        shutil.copy2(DEFAULT_IMAGE_PATH, output_path)
+        print(f"📌 使用默认图片: {DEFAULT_IMAGE_PATH}")
+        return True
+
+    # 如果没有默认图片，创建一个占位文件
+    print(f"⚠️ 默认图片不存在，跳过: {index}")
+    return False
+
+
+def check_and_fill_images(total_prompts: int, success_count: int):
+    """检查图片数量，不足时使用默认图片填充"""
+    if success_count < MIN_IMAGES_REQUIRED:
+        print(f"\n⚠️ 图片数量不足: {success_count}/{MIN_IMAGES_REQUIRED}")
+        print("   尝试使用默认图片填充...")
+
+        for i in range(1, total_prompts + 1):
+            output_path = os.path.join(OUTPUT_DIR, f"output{i}.jpg")
+            if not os.path.exists(output_path):
+                use_default_image(i)
+
+
+def save_failed_prompts(failed_prompts: list):
+    """保存失败的 prompt 信息，方便后续人工处理"""
+    if not failed_prompts:
+        return
+
+    failed_file = os.path.join(OUTPUT_DIR, "failed_prompts.json")
+    with open(failed_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "count": len(failed_prompts),
+            "prompts": failed_prompts
+        }, f, ensure_ascii=False, indent=2)
+    print(f"📝 失败的 prompt 已保存到: {failed_file}")
 
 
 def main():
@@ -448,6 +538,8 @@ def main():
 
             success_count = 0
             skip_count = 0
+            failed_prompts = []  # 记录失败的 prompt
+
             for i, prompt in enumerate(prompts, start=1):
                 print(f"\n{'=' * 60}")
                 print(f"📌 [{i}/{total}] Prompt: {prompt[:60]}...")
@@ -458,18 +550,14 @@ def main():
                     wait_for_input_box(page, timeout=8)
 
                 # --- 重试逻辑 ---
-                retry_suffixes = [
-                    "",
-                    "",
-                ]
                 current_prompt = prompt
                 saved = False
 
                 for attempt in range(MAX_RETRY + 1):
                     if attempt > 0:
-                        suffix = retry_suffixes[(attempt - 1) % len(retry_suffixes)]
-                        current_prompt = prompt + suffix
-                        print(f"\n🔄 第 {attempt} 次重试: {current_prompt[:60]}...")
+                        # 重试时简化 prompt
+                        current_prompt = simplify_prompt(prompt)
+                        print(f"\n🔄 第 {attempt} 次重试（简化 prompt）: {current_prompt[:60]}...")
                         # 开一个新对话
                         page.goto(DOUBAO_URL, wait_until="domcontentloaded", timeout=60000)
                         wait_for_input_box(page, timeout=8)
@@ -496,10 +584,11 @@ def main():
                     if refused:
                         print(f"⚠️ [{i}] 豆包拒绝生成 (attempt {attempt + 1}/{MAX_RETRY + 1})")
                         if attempt < MAX_RETRY:
-                            print("   将尝试换一种描述方式重试...")
+                            print("   将尝试简化 prompt 重试...")
                             continue
                         else:
                             print(f"⏭️ [{i}] 重试 {MAX_RETRY} 次仍被拒绝，跳过此 prompt")
+                            failed_prompts.append({"index": i, "prompt": prompt, "reason": "rejected"})
                             skip_count += 1
                             break
 
@@ -516,6 +605,13 @@ def main():
 
                 if not saved and not skip_count:
                     print(f"❌ [{i}] 图片生成/保存失败（已重试）")
+                    failed_prompts.append({"index": i, "prompt": prompt, "reason": "timeout"})
+
+            # 检查图片数量，不足时使用默认图片填充
+            check_and_fill_images(total, success_count)
+
+            # 保存失败的 prompt 信息
+            save_failed_prompts(failed_prompts)
 
             print(f"\n{'=' * 60}")
             print(f"✨ 全部完成！成功: {success_count}/{total}", end="")
@@ -523,6 +619,8 @@ def main():
                 print(f"，跳过: {skip_count}")
             else:
                 print()
+            if failed_prompts:
+                print(f"⚠️ {len(failed_prompts)} 条 prompt 失败，已保存到 failed_prompts.json")
             print(f"{'=' * 60}")
 
         finally:
