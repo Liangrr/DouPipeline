@@ -13,4 +13,5 @@ wheels/
 /browser_profile/
 /byte_browser_profile/
 /doubao_browser_profile/
+/logs/
 /*.log

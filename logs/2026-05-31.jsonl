@@ -1,0 +1,16 @@
+{"time": "2026-05-31 12:19:44", "platform": "xiaohongshu", "step": 1, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 12:22:12", "platform": "douyin", "step": 1, "step_name": "generate", "status": "fail", "error": "generate_content() got an unexpected keyword argument 'system_prompt_path'"}
+{"time": "2026-05-31 12:25:13", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 12:28:19", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 12:28:59", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"发布作品\").first\n"}
+{"time": "2026-05-31 12:30:11", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"发布作品\").first\n"}
+{"time": "2026-05-31 12:31:35", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"发布作品\").first\n"}
+{"time": "2026-05-31 12:39:50", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Page.set_input_files: Error: Non-multiple file input can only accept single file\nCall log:\n  - waiting for locator(\"input[type=\\\"file\\\"]\")\n    - locator resolved to 2 elements. Proceeding with the first one: <input type=\"file\" tabindex=\"-1\" accept=\"video/x-flv,video/mp4,video/x-m4v,video/*,.flv,.avi,.wmv,.webm,.ts,.mp4,.mpeg4,.mov,.m4v,.mpg,.mkv,.m4\"/>\n"}
+{"time": "2026-05-31 12:41:37", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"下一步\").first\n"}
+{"time": "2026-05-31 12:45:01", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 12:46:36", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 12:49:14", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 12:53:17", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 12:56:44", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 12:57:21", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 13:00:32", "platform": "xiaohongshu", "step": 1, "step_name": "xiaohongshu_publish", "status": "success"}
