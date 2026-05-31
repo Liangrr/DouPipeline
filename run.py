@@ -16,6 +16,11 @@
     python run.py --platform xiaohongshu --input xxx.json   # 使用已有 JSON 文件
     python run.py --platform xiaohongshu --only 1           # 只生成文案
     python run.py --platform xiaohongshu --only 2           # 只发布
+
+多账号管理:
+    python run.py --platform douyin --account list          # 列出所有账号
+    python run.py --platform douyin --account create my_acc # 创建新账号
+    python run.py --platform douyin --account my_acc        # 使用指定账号发布
 """
 
 import argparse
@@ -26,13 +31,22 @@ import subprocess
 import sys
 from datetime import datetime
 
+# 导入账号管理模块
+from account_manager import (
+    list_accounts,
+    create_account,
+    print_accounts,
+    migrate_legacy_account,
+    get_account_config_path,
+    get_account_output_dir,
+    get_account_browser_profile,
+)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
-CONFIG_PATH = os.path.join(BASE_DIR, "doubao.json")
-XIAOHONGSHU_JSON_PATH = os.path.join(BASE_DIR, "xiaohongshu.json")
 
 
-def log_execution(step_num: int, step_name: str, success: bool, error_msg: str = "", platform: str = ""):
+def log_execution(step_num: int, step_name: str, success: bool, error_msg: str = "", platform: str = "", account: str = ""):
     """将每步执行结果记录到 logs 目录下，按日期分文件"""
     os.makedirs(LOGS_DIR, exist_ok=True)
     today = datetime.now().strftime("%Y-%m-%d")
@@ -40,6 +54,7 @@ def log_execution(step_num: int, step_name: str, success: bool, error_msg: str =
     record = {
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "platform": platform,
+        "account": account,
         "step": step_num,
         "step_name": step_name,
         "status": "success" if success else "fail",
@@ -55,9 +70,15 @@ def log_execution(step_num: int, step_name: str, success: bool, error_msg: str =
 async def run_douyin_pipeline(args):
     """抖音链路: generate → doubao → douyin.publish"""
     args.topic = args.topic or "美女"
+    account_name = getattr(args, 'account', 'legacy') or 'legacy'
+
     print("=" * 60)
-    print("🎬  抖音链路")
+    print(f"🎬  抖音链路  [账号: {account_name}]")
     print("=" * 60)
+
+    # 获取账号专属路径
+    config_path = get_account_config_path(account_name)
+    output_dir = get_account_output_dir(account_name)
 
     start_step = args.step or 1
     only_step = args.only
@@ -78,14 +99,15 @@ async def run_douyin_pipeline(args):
                 topic=args.topic,
                 send_type=content_type,
                 prompt_count=count,
+                output_path=config_path,
             )
-            with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+            with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
-            print(f"✅ Step 1 完成 -> {CONFIG_PATH}")
-            log_execution(1, "generate", success=True, platform="douyin")
+            print(f"✅ Step 1 完成 -> {config_path}")
+            log_execution(1, "generate", success=True, platform="douyin", account=account_name)
         except Exception as e:
             print(f"❌ Step 1 失败: {e}")
-            log_execution(1, "generate", success=False, error_msg=str(e), platform="douyin")
+            log_execution(1, "generate", success=False, error_msg=str(e), platform="douyin", account=account_name)
             sys.exit(1)
         if only_step == 1:
             return
@@ -99,16 +121,16 @@ async def run_douyin_pipeline(args):
         try:
             doubao_script = os.path.join(BASE_DIR, "doubao.py")
             result = subprocess.run(
-                [sys.executable, doubao_script],
+                [sys.executable, doubao_script, "--account", account_name],
                 cwd=BASE_DIR,
             )
             if result.returncode != 0:
                 raise RuntimeError(f"退出码: {result.returncode}")
             print("✅ Step 2 完成")
-            log_execution(2, "doubao", success=True, platform="douyin")
+            log_execution(2, "doubao", success=True, platform="douyin", account=account_name)
         except Exception as e:
             print(f"❌ Step 2 失败: {e}")
-            log_execution(2, "doubao", success=False, error_msg=str(e), platform="douyin")
+            log_execution(2, "doubao", success=False, error_msg=str(e), platform="douyin", account=account_name)
             sys.exit(1)
         if only_step == 2:
             return
@@ -121,19 +143,20 @@ async def run_douyin_pipeline(args):
         print("-" * 60)
         try:
             from douyin.publisher import publish as douyin_publish
-            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
             send_type = content_type or config.get("sendType", "image")
             await douyin_publish(
                 sendType=send_type,
                 title=config.get("title"),
                 content=config.get("content"),
+                account_name=account_name,
             )
             print("✅ Step 3 完成")
-            log_execution(3, "douyin_publish", success=True, platform="douyin")
+            log_execution(3, "douyin_publish", success=True, platform="douyin", account=account_name)
         except Exception as e:
             print(f"❌ Step 3 失败: {e}")
-            log_execution(3, "douyin_publish", success=False, error_msg=str(e), platform="douyin")
+            log_execution(3, "douyin_publish", success=False, error_msg=str(e), platform="douyin", account=account_name)
             sys.exit(1)
     else:
         print("\n⏭️  Step 3: 跳过")
@@ -231,6 +254,11 @@ def main():
     python run.py --platform xiaohongshu --input xxx.json   # 使用已有 JSON 文件
     python run.py --platform xiaohongshu --only 1           # 只生成文案
     python run.py --platform xiaohongshu --only 2           # 只发布
+
+  多账号管理:
+    python run.py --platform douyin --account list          # 列出所有账号
+    python run.py --platform douyin --account create my_acc # 创建新账号
+    python run.py --platform douyin --account my_acc        # 使用指定账号发布
         """,
     )
     parser.add_argument(
@@ -252,6 +280,15 @@ def main():
         "--only", type=int,
         help="只执行第 N 步",
     )
+    parser.add_argument(
+        "--account",
+        help="账号名称: list=列出所有账号, <名称>=使用指定账号",
+    )
+    parser.add_argument(
+        "--account-create",
+        metavar="NAME",
+        help="创建新账号",
+    )
     # 抖音专用参数
     douyin_group = parser.add_argument_group("抖音参数")
     douyin_group.add_argument(
@@ -270,6 +307,26 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # 处理账号管理命令
+    if args.account_create:
+        # 创建新账号
+        try:
+            create_account(args.account_create)
+        except (ValueError, FileExistsError) as e:
+            print(f"❌ {e}")
+        return
+
+    if args.account:
+        if args.account == "list":
+            print_accounts()
+            return
+        else:
+            # 使用指定账号
+            print(f"📋 使用账号: {args.account}")
+
+    # 确保 legacy 账号存在（自动迁移）
+    migrate_legacy_account()
 
     if args.platform == "douyin":
         asyncio.run(run_douyin_pipeline(args))

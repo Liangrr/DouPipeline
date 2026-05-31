@@ -15,3 +15,4 @@ wheels/
 /doubao_browser_profile/
 /logs/
 /*.log
+/accounts/

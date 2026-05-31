@@ -5,10 +5,21 @@ from pathlib import Path
 import asyncio
 from playwright.async_api import async_playwright
 
+# 导入账号管理模块
+import sys
+sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
+from account_manager import (
+    get_account_dir,
+    get_account_browser_profile,
+    get_account_config_path,
+    get_account_output_dir,
+    ensure_account_exists,
+    migrate_legacy_account,
+)
+
 # ==================== 配置区 ====================
 PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 UPLOAD_URL = "https://creator.douyin.com/creator-micro/content/upload"
-OUTPUT_DIR = os.path.join(PROJECT_ROOT, "doubao_output")
 TYPE_MAP = {
     "article": "文章",
     "image": "图文",
@@ -16,9 +27,9 @@ TYPE_MAP = {
 }
 
 
-def read_config():
+def read_config(account_name: str = "legacy"):
     """
-    读取配置文件
+    读取账号专属的配置文件
     {
         "sendType": "image",
         "title": "标题",
@@ -27,26 +38,27 @@ def read_config():
         "content": "内容"
     }
     """
-    config_path = os.path.join(PROJECT_ROOT, "doubao.json")
+    config_path = get_account_config_path(account_name)
     with open(config_path, 'r', encoding='utf-8') as f:
         config = json.load(f)
     return config
 
 
-def get_output_images() -> list:
-    """获取 doubao_output 目录下所有图片文件"""
-    if not os.path.exists(OUTPUT_DIR):
-        raise FileNotFoundError(f"找不到输出目录: {OUTPUT_DIR}")
+def get_output_images(account_name: str = "legacy") -> list:
+    """获取账号专属的 doubao_output 目录下所有图片文件"""
+    output_dir = get_account_output_dir(account_name)
+    if not os.path.exists(output_dir):
+        raise FileNotFoundError(f"找不到输出目录: {output_dir}")
 
     images = []
     for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.gif", "*.bmp"]:
-        images.extend(glob.glob(os.path.join(OUTPUT_DIR, ext)))
-        images.extend(glob.glob(os.path.join(OUTPUT_DIR, ext.upper())))
+        images.extend(glob.glob(os.path.join(output_dir, ext)))
+        images.extend(glob.glob(os.path.join(output_dir, ext.upper())))
 
     images = sorted(set(images))
 
     if not images:
-        raise FileNotFoundError(f"目录 {OUTPUT_DIR} 中没有找到图片文件")
+        raise FileNotFoundError(f"目录 {output_dir} 中没有找到图片文件")
 
     print(f"📷 找到 {len(images)} 张图片:")
     for img in images:
@@ -533,9 +545,13 @@ async def publish_video(page, title: str, summary: str, content: str, video_path
 
 # ==================== 入口 ====================
 
-async def publish(sendType: str = None, title: str = None, content: str = None):
+async def publish(sendType: str = None, title: str = None, content: str = None, account_name: str = "legacy"):
     """主入口：根据 sendType 执行对应的发布流程"""
-    config = read_config()
+    # 确保账号存在
+    ensure_account_exists(account_name)
+
+    # 读取账号专属配置
+    config = read_config(account_name)
 
     if not sendType:
         sendType = config.get("sendType", "article")
@@ -550,19 +566,20 @@ async def publish(sendType: str = None, title: str = None, content: str = None):
     # 文章模式：如果 config 中未指定封面，自动使用 doubao_output 中的图片
     if sendType == "article" and not cover_image:
         try:
-            images = get_output_images()
+            images = get_output_images(account_name)
             if images:
                 cover_image = images[0]
                 print(f"📋 自动使用封面图: {cover_image}")
         except FileNotFoundError:
             print("⚠️ 未找到封面图片，将使用默认封面")
 
+    print(f"📋 账号: {account_name}")
     print(f"📋 发布类型: {TYPE_MAP.get(sendType, '未知')}")
     print(f"📋 标题: {title}")
     print(f"📋 内容长度: {len(content)} 字符")
 
-    # 用户数据目录
-    user_data_dir = os.path.join(PROJECT_ROOT, "byte_browser_profile")
+    # 用户数据目录（账号专属）
+    user_data_dir = get_account_browser_profile(account_name)
     Path(user_data_dir).mkdir(exist_ok=True)
     print(f"📂 浏览器数据目录: {user_data_dir}")
 
@@ -596,7 +613,7 @@ async def publish(sendType: str = None, title: str = None, content: str = None):
 
         elif sendType == "image":
             print(f"\n🚀 开始发布图文...")
-            images = get_output_images()
+            images = get_output_images(account_name)
             await publish_image_post(page, title, subtitle, summary, content, images)
 
         elif sendType == "video":
@@ -619,8 +636,9 @@ async def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--type", choices=["article", "image", "video"], help="发布类型")
+    parser.add_argument("--account", default="legacy", help="账号名称 (默认: legacy)")
     args = parser.parse_args()
-    await publish(sendType=args.type)
+    await publish(sendType=args.type, account_name=args.account)
 
 
 if __name__ == "__main__":

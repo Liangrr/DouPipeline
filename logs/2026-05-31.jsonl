@@ -40,3 +40,16 @@
 {"time": "2026-05-31 13:54:20", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
 {"time": "2026-05-31 13:56:53", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
 {"time": "2026-05-31 13:57:20", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 14:44:27", "platform": "douyin", "account": "test_account", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:45:06", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:45:57", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:47:13", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:50:39", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 14:51:15", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 14:53:59", "platform": "douyin", "account": "asuria", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:54:36", "platform": "douyin", "account": "asuria", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 14:55:19", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"text=发布文章\")\n"}
+{"time": "2026-05-31 15:01:19", "platform": "douyin", "account": "asuria", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 15:01:59", "platform": "douyin", "account": "asuria", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 15:02:57", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 15:07:55", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "success"}

@@ -67,6 +67,10 @@ uv run python run.py --platform douyin
 uv run python run.py --platform douyin --topic "旅行攻略"
 uv run python run.py --platform douyin --type article   # 发布文章
 uv run python run.py --platform douyin --type image     # 发布图文（默认）
+python run.py --platform douyin --type article --topic "agent记忆系统" --account asuria
+
+uv run python run.py --platform douyin --type article --account asuria
+uv run python run.py --platform douyin --type article --account asuria --topic "agent记忆系统" --only 3
 
 # 指定图片数量
 uv run python run.py --platform douyin --count 5

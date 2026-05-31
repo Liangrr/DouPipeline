@@ -7,15 +7,21 @@
 import json
 import os
 import shutil
+import sys
 import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
+# 导入账号管理模块
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from account_manager import (
+    get_account_config_path,
+    get_account_output_dir,
+)
+
 # ====== 配置 ======
 DOUBAO_URL = "https://www.doubao.com/chat"
-PROMPT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao.json")
 USER_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao_browser_profile")
-OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao_output")
 TIMEOUT_IMAGE = 180
 MAX_RETRY = 2  # 被拒绝时最多重试次数
 REFUSAL_KEYWORDS = [
@@ -23,6 +29,11 @@ REFUSAL_KEYWORDS = [
     "我无法", "我不能", "不可以", "不符合", "违反",
     "sorry", "can't generate", "cannot generate", "unable to",
 ]
+
+# 全局变量，将在 main() 中设置
+ACCOUNT_NAME = "legacy"
+PROMPT_FILE = None
+OUTPUT_DIR = None
 
 
 def load_prompts():
@@ -382,8 +393,27 @@ def wait_for_image_and_save(page, index):
 
 
 def main():
+    global ACCOUNT_NAME, PROMPT_FILE, OUTPUT_DIR
+
+    # 解析命令行参数
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        if args[i] == "--account" and i + 1 < len(args):
+            ACCOUNT_NAME = args[i + 1]
+            i += 2
+        elif args[i] in ("-h", "--help"):
+            print("用法: python doubao.py [--account NAME]")
+            sys.exit(0)
+        else:
+            i += 1
+
+    # 设置账号专属路径
+    PROMPT_FILE = get_account_config_path(ACCOUNT_NAME)
+    OUTPUT_DIR = get_account_output_dir(ACCOUNT_NAME)
+
     print("=" * 60)
-    print("🤖 豆包批量提问 & 保存图片")
+    print(f"🤖 豆包批量提问 & 保存图片  [账号: {ACCOUNT_NAME}]")
     print("=" * 60)
 
     prompts = load_prompts()
