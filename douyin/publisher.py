@@ -547,6 +547,16 @@ async def publish(sendType: str = None, title: str = None, content: str = None):
     summary = config.get("summary", "")
     cover_image = config.get("cover_image", "")
 
+    # 文章模式：如果 config 中未指定封面，自动使用 doubao_output 中的图片
+    if sendType == "article" and not cover_image:
+        try:
+            images = get_output_images()
+            if images:
+                cover_image = images[0]
+                print(f"📋 自动使用封面图: {cover_image}")
+        except FileNotFoundError:
+            print("⚠️ 未找到封面图片，将使用默认封面")
+
     print(f"📋 发布类型: {TYPE_MAP.get(sendType, '未知')}")
     print(f"📋 标题: {title}")
     print(f"📋 内容长度: {len(content)} 字符")

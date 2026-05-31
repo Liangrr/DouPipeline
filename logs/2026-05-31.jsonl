@@ -27,3 +27,6 @@
 {"time": "2026-05-31 13:21:34", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
 {"time": "2026-05-31 13:25:26", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
 {"time": "2026-05-31 13:26:02", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 13:40:42", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:41:21", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 13:41:51", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
