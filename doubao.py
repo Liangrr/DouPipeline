@@ -136,7 +136,8 @@ def input_prompt_and_submit(page, prompt):
 
     print(f"   正在键入 prompt（{len(prompt)} 字符）...")
     page.keyboard.type(prompt, delay=10)
-    page.wait_for_timeout(500)
+    # 输入完等待 3 秒再发送，防止触发人机校验
+    page.wait_for_timeout(3000)
 
     print("🚀 发送 prompt...")
     # 先尝试点击发送按钮，比按 Enter 更可靠

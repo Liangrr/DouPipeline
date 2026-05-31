@@ -14,8 +14,28 @@ import subprocess
 import sys
 import os
 import argparse
+import json
+from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
+
+
+def log_execution(step_num: int, step_name: str, success: bool, error_msg: str = ""):
+    """将每步执行结果记录到 logs 目录下，按日期分文件"""
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    log_file = os.path.join(LOGS_DIR, f"{today}.jsonl")
+    record = {
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "step": step_num,
+        "step_name": step_name,
+        "status": "success" if success else "fail",
+    }
+    if error_msg:
+        record["error"] = error_msg
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def run_step(step_num: int, step_name: str, cmd: list[str]) -> bool:
@@ -27,9 +47,12 @@ def run_step(step_num: int, step_name: str, cmd: list[str]) -> bool:
 
     result = subprocess.run(cmd, cwd=BASE_DIR)
     if result.returncode != 0:
-        print(f"\n❌ 第 {step_num} 步 ({step_name}) 执行失败，退出码: {result.returncode}")
+        error_msg = f"退出码: {result.returncode}"
+        print(f"\n❌ 第 {step_num} 步 ({step_name}) 执行失败，{error_msg}")
+        log_execution(step_num, step_name, success=False, error_msg=error_msg)
         return False
     print(f"\n✅ 第 {step_num} 步 ({step_name}) 完成")
+    log_execution(step_num, step_name, success=True)
     return True
 
 

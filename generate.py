@@ -97,6 +97,16 @@ def fix_json(s: str) -> str:
     # 2. 去掉尾逗号: }, → }  和  ] → ]
     s = re.sub(r",\s*([\]}])", r"\1", s)
 
+    # 3. 修复截断/未闭合的字符串：如果最后一个字符串值缺少结尾引号，补上并闭合 JSON
+    #    匹配 "...prompt": ["... 这种最后一段未闭合的情况
+    s = re.sub(r'(:\s*")([^"]*?)$', r'\1\2"}', s)
+    #    如果数组未闭合：最后一个元素是完整字符串但缺少 ]}]
+    if s.rstrip().endswith('"'):
+        # 检查是否缺少闭合的 ]}
+        brace_count = s.count('{') - s.count('}')
+        bracket_count = s.count('[') - s.count(']')
+        s = s.rstrip() + ']' * bracket_count + '}' * brace_count
+
     return s
 
 
@@ -116,7 +126,7 @@ async def generate_content(topic: str, send_type: str, prompt_count: int) -> dic
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.8,
-        max_tokens=4096,
+        max_tokens=8192,
     )
 
     raw = response.choices[0].message.content.strip()
