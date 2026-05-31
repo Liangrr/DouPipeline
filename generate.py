@@ -177,6 +177,25 @@ async def generate_content(topic: str, send_type: str, prompt_count: int, output
     raw = response.choices[0].message.content.strip()
     print(f"\n📝 原始输出:\n{raw}\n")
 
+    # 检查是否收到 API 拒绝信息
+    rejection_keywords = [
+        "request was rejected",
+        "high risk",
+        "rejected",
+        "not allowed",
+        "violate",
+        "inappropriate",
+    ]
+    raw_lower = raw.lower()
+    for keyword in rejection_keywords:
+        if keyword.lower() in raw_lower:
+            print(f"\n❌ API 返回拒绝信息: {raw}")
+            print("\n💡 建议:")
+            print("   1. 更换主题，避免敏感内容")
+            print("   2. 对于 --type article，尝试更技术性的主题，如: 'Agent工具调用'、'RAG检索增强'")
+            print("   3. 对于 --type image，主题可能触发了图片安全过滤")
+            raise ValueError(f"内容被安全机制拒绝: {raw}")
+
     # 解析 JSON（处理 ```json ``` 包裹）
     json_str = raw
     if "```json" in json_str:

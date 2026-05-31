@@ -53,3 +53,14 @@
 {"time": "2026-05-31 15:01:59", "platform": "douyin", "account": "asuria", "step": 2, "step_name": "doubao", "status": "success"}
 {"time": "2026-05-31 15:02:57", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "success"}
 {"time": "2026-05-31 15:07:55", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 19:41:25", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:47:05", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:47:06", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 19:48:02", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:48:02", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 19:48:15", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 19:48:51", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "fail", "error": "Expecting value: line 1 column 1 (char 0)"}
+{"time": "2026-05-31 19:50:44", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:51:32", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:54:47", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 19:55:23", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
