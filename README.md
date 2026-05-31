@@ -14,6 +14,8 @@
 ```
 browser/
 ├── run.py                        # 统一入口，--platform 选择平台
+├── scheduler.py                  # 定时执行脚本
+├── run_scheduler.sh              # 定时任务守护脚本（防休眠+自动重启）
 ├── generate.py                   # LLM 内容生成（可独立运行）
 ├── doubao.py                     # 豆包 AI 生图自动化
 ├── douyin/                       # 抖音链路
@@ -189,6 +191,98 @@ uv run python -m xiaohongshu.publisher --input my_note.json
   "step_name": "generate",
   "status": "success"
 }
+```
+
+## 定时执行
+
+通过 `scheduler.py` 定时自动执行发布任务。
+
+### 修改定时规则
+
+编辑 [scheduler.py:28-36](scheduler.py#L28-L36) 的 `SCHEDULES` 列表，格式为 `(minute, hour, platform, extra_args)`：
+
+`minute` 和 `hour` 支持三种写法：
+
+| 写法 | 含义 | 示例 |
+|------|------|------|
+| 具体数字 | 精确匹配 | `hour=9` → 第 9 小时 |
+| `"*"` | 每个都执行 | `hour="*"` → 每小时 |
+| `"*/N"` | 每隔 N 执行 | `hour="*/2"` → 每 2 小时 |
+
+```python
+SCHEDULES = [
+    # (minute, hour, platform, extra_args)
+
+    # 每天固定时间
+    (0,  9,     "douyin",      ["--type", "article"]),    # 每天 9:00
+    (30, 9,     "xiaohongshu", []),                        # 每天 9:30
+
+    # 每隔 N 小时
+    (0,  "*/4", "douyin",      ["--type", "image"]),      # 每 4 小时
+    (0,  "*/2", "xiaohongshu", []),                        # 每 2 小时
+
+    # 每小时
+    (0,  "*",   "douyin",      ["--type", "image"]),      # 每小时整点
+]
+```
+
+**常用配置示例：**
+
+| 需求 | 配置 |
+|------|------|
+| 每天 9:00 抖音发文章 | `(0, 9, "douyin", ["--type", "article"])` |
+| 每 4 小时 抖音发图文 | `(0, "*/4", "douyin", ["--type", "image"])` |
+| 每 2 小时的 30 分 小红书 | `(30, "*/2", "xiaohongshu", [])` |
+| 每小时整点 抖音发文章 | `(0, "*", "douyin", ["--type", "article"])` |
+| 注释掉（暂停） | 在行首加 `#`，如 `# (0, "*/4", "douyin", [])` |
+
+### 执行
+
+**快速调试（前台运行）：**
+
+```bash
+uv run python scheduler.py
+```
+
+按 `Ctrl+C` 停止。
+
+**生产环境（后台守护）：**
+
+通过 [run_scheduler.sh](run_scheduler.sh) 启动，支持防休眠、自动重启、后台运行：
+
+```bash
+# 启动（后台守护，关屏合盖不停，异常自动重启）
+./run_scheduler.sh start
+
+# 停止
+./run_scheduler.sh stop
+
+# 重启
+./run_scheduler.sh restart
+
+# 查看运行状态
+./run_scheduler.sh status
+
+# 实时查看日志
+./run_scheduler.sh logs
+
+# 前台运行（调试用，Ctrl+C 停止）
+./run_scheduler.sh foreground
+```
+
+| 功能 | 说明 |
+|------|------|
+| 防休眠 | `caffeinate -i -s` 关屏合盖系统不休眠 |
+| 自动重启 | scheduler.py 异常退出后 5 秒自动重启 |
+| 后台运行 | `nohup` 守护，关闭终端不影响 |
+| 日志记录 | `logs/scheduler.log` |
+
+### 修改检查频次
+
+默认每 **30 秒**检查一次时间。修改 [scheduler.py:103](scheduler.py#L103)：
+
+```python
+time.sleep(30)  # 改成你需要的秒数，如 60
 ```
 
 ## 注意事项
