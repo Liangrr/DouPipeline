@@ -11,7 +11,7 @@ USER_DATA_DIR = os.path.join(PROJECT_ROOT, "browser_profile")
 
 
 def read_json_file(file_path: str) -> dict:
-    """读取 JSON 文件，提取 title 和 content"""
+    """读取 JSON 文件，提取 title、content 和 tags"""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"找不到文件: {file_path}")
 
@@ -20,6 +20,7 @@ def read_json_file(file_path: str) -> dict:
 
     title = data.get("title", "")
     content = data.get("content", "")
+    tags = data.get("tags", [])
 
     if not title:
         raise ValueError("未找到 title 字段")
@@ -29,7 +30,7 @@ def read_json_file(file_path: str) -> dict:
     if len(title) > 20:
         title = title[:20]
 
-    return {"title": title, "content": content}
+    return {"title": title, "content": content, "tags": tags}
 
 
 async def ensure_logged_in(context):
@@ -68,7 +69,7 @@ async def ensure_logged_in(context):
     await page.close()
 
 
-async def publish_note(page, title: str, content: str):
+async def publish_note(page, title: str, content: str, tags: list = None):
     """执行发布笔记的完整流程"""
     # 步骤1：点击"发布笔记"
     print("📝 步骤1：进入发布页面...")
@@ -132,23 +133,110 @@ async def publish_note(page, title: str, content: str):
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(1000)
 
-    # 步骤8：点击发布（closed shadow root 已被劫持为 open，可直接选择）
-    print("📝 步骤8：点击发布...")
-    submit_btn = page.get_by_text("发布", exact=True)
-    await submit_btn.click()
-    print("  ⏳ 等待发布完成（含图片上传）...")
-    # 等待"发布成功"或页面跳转，最多等 120 秒
+    # 步骤8：输入标签
+    if tags:
+        print(f"📝 步骤8：输入标签 ({len(tags)} 个)...")
+        for tag in tags:
+            try:
+                # 小红书发布页的话题/标签输入框
+                tag_input = page.locator('input[placeholder*="话题"], input[placeholder*="标签"], input[placeholder*="添加话题"]').first
+                if await tag_input.is_visible(timeout=3000):
+                    await tag_input.click()
+                    await tag_input.fill(tag)
+                    await page.wait_for_timeout(1000)
+                    # 按回车或点击下拉选项添加标签
+                    await page.keyboard.press("Enter")
+                    await page.wait_for_timeout(500)
+                    print(f"  ✅ 已添加标签: {tag}")
+                else:
+                    print(f"  ⚠️ 未找到标签输入框，跳过标签: {tag}")
+                    break
+            except Exception as e:
+                print(f"  ⚠️ 添加标签 '{tag}' 失败: {e}")
+    else:
+        print("📝 步骤8：无标签，跳过")
+
+    # 步骤9：等待图片上传完成
+    print("📝 步骤9：等待图片上传完成...")
+    max_wait = 120  # 最长等待 120 秒
+    start_time = asyncio.get_event_loop().time()
+    while True:
+        elapsed = asyncio.get_event_loop().time() - start_time
+        if elapsed > max_wait:
+            print("  ⚠️ 等待超时，继续发布")
+            break
+
+        # 检查是否存在上传中的指示器
+        uploading = False
+        for sel in [
+            'text=上传中',
+            'text=上传中...',
+            '[class*="uploading"]',
+            '[class*="progress"]',
+            '.upload-progress',
+            'text=%',  # 百分比进度
+        ]:
+            try:
+                el = page.locator(sel).first
+                if await el.is_visible(timeout=500):
+                    uploading = True
+                    break
+            except Exception:
+                continue
+
+        if not uploading:
+            print(f"  ✅ 图片上传完成 ({int(elapsed)}s)")
+            break
+
+        print(f"  ⏳ 图片上传中... ({int(elapsed)}s/{max_wait}s)")
+        await page.wait_for_timeout(2000)
+
+    await page.wait_for_timeout(1000)
+
+    # 步骤10：点击发布
+    print("📝 步骤10：点击发布...")
+    # 尝试多种选择器定位发布按钮
+    for sel in [
+        'button:has-text("发布")',
+        'div:has-text("发布"):not(:has(div))',
+        page.get_by_text("发布", exact=True),
+    ]:
+        try:
+            btn = sel if not isinstance(sel, str) else page.locator(sel).first
+            if await btn.is_visible(timeout=3000):
+                await btn.click()
+                print(f"  ✅ 已点击发布按钮")
+                break
+        except Exception:
+            continue
+
+    await page.wait_for_timeout(2000)
+
+    # 处理可能的确认弹窗
+    for confirm_text in ["确认发布", "确认", "确定", "好的"]:
+        try:
+            confirm_btn = page.get_by_text(confirm_text, exact=True)
+            if await confirm_btn.is_visible(timeout=2000):
+                print(f"  📋 检测到确认弹窗，点击「{confirm_text}」...")
+                await confirm_btn.click()
+                await page.wait_for_timeout(1000)
+                break
+        except Exception:
+            continue
+
+    print("  ⏳ 等待发布完成...")
+    # 等待"发布成功"提示或页面跳转，最多等 30 秒
     try:
-        await page.get_by_text("发布成功").wait_for(state="visible", timeout=120000)
+        await page.get_by_text("发布成功").wait_for(state="visible", timeout=30000)
         print("  ✅ 检测到「发布成功」")
     except Exception:
         # 没有明确提示，等页面跳转（URL 变化）
         current_url = page.url
         try:
-            await page.wait_for_url(lambda url: url != current_url, timeout=120000)
+            await page.wait_for_url(lambda url: url != current_url, timeout=30000)
+            print("  ✅ 页面已跳转，视为发布成功")
         except Exception:
-            await page.wait_for_timeout(10000)
-        print("  ✅ 页面已跳转，视为发布成功")
+            print("  ⚠️ 未检测到成功提示，请手动确认发布结果")
 
     print("✅ 发布完成！")
 
@@ -160,6 +248,8 @@ async def publish(file_path: str):
     article = read_json_file(file_path)
     print(f"✅ 标题: {article['title']}")
     print(f"✅ 内容长度: {len(article['content'])} 字符")
+    if article.get("tags"):
+        print(f"✅ 标签: {', '.join(article['tags'])}")
 
     # 2. 创建持久化浏览器目录
     Path(USER_DATA_DIR).mkdir(exist_ok=True)
@@ -194,7 +284,7 @@ async def publish(file_path: str):
         await page.wait_for_timeout(2000)
 
         # 6. 执行发布
-        await publish_note(page, article["title"], article["content"])
+        await publish_note(page, article["title"], article["content"], article.get("tags"))
 
         await page.close()
     finally:

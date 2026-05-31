@@ -14,3 +14,13 @@
 {"time": "2026-05-31 12:56:44", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
 {"time": "2026-05-31 12:57:21", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
 {"time": "2026-05-31 13:00:32", "platform": "xiaohongshu", "step": 1, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:12:43", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:13:53", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "fail", "error": "BrowserContext.close: Connection closed while reading from the driver"}
+{"time": "2026-05-31 13:14:08", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:14:32", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:15:49", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:19:15", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "fail", "error": "BrowserContext.close: Connection closed while reading from the driver"}
+{"time": "2026-05-31 13:19:35", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:20:00", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:20:17", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:20:41", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
