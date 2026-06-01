@@ -28,7 +28,6 @@ import argparse
 import asyncio
 import json
 import os
-import subprocess
 import sys
 from datetime import datetime
 
@@ -119,13 +118,8 @@ async def run_douyin_pipeline(args):
         print("\n🚀 Step 2: 豆包图片生成 (doubao)")
         print("-" * 60)
         try:
-            doubao_script = os.path.join(BASE_DIR, "doubao.py")
-            result = subprocess.run(
-                [sys.executable, doubao_script, "--account", account_name],
-                cwd=BASE_DIR,
-            )
-            if result.returncode != 0:
-                raise RuntimeError(f"退出码: {result.returncode}")
+            from doubao import run_doubao
+            await run_doubao(account_name=account_name)
             print("✅ Step 2 完成")
             log_execution(2, "doubao", success=True, platform="douyin", account=account_name)
         except Exception as e:
@@ -169,8 +163,10 @@ async def run_douyin_pipeline(args):
 async def run_xiaohongshu_pipeline(args):
     """小红书链路: generate → xiaohongshu.publish"""
     args.topic = args.topic or "宝妈育儿"
+    account_name = getattr(args, 'account', 'legacy') or 'legacy'
+
     print("=" * 60)
-    print("📕  小红书链路")
+    print(f"📕  小红书链路  [账号: {account_name}]")
     print("=" * 60)
 
     start_step = args.step or 1
@@ -199,11 +195,11 @@ async def run_xiaohongshu_pipeline(args):
             with open(XIAOHONGSHU_JSON_PATH, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
             print(f"✅ Step 1 完成 -> {XIAOHONGSHU_JSON_PATH}")
-            log_execution(1, "generate", success=True, platform="xiaohongshu")
+            log_execution(1, "generate", success=True, platform="xiaohongshu", account=account_name)
             input_file = XIAOHONGSHU_JSON_PATH
         except Exception as e:
             print(f"❌ Step 1 失败: {e}")
-            log_execution(1, "generate", success=False, error_msg=str(e), platform="xiaohongshu")
+            log_execution(1, "generate", success=False, error_msg=str(e), platform="xiaohongshu", account=account_name)
             sys.exit(1)
         if only_step == 1:
             return
@@ -218,12 +214,12 @@ async def run_xiaohongshu_pipeline(args):
         print("-" * 60)
         try:
             from xiaohongshu.publisher import publish as xhs_publish
-            await xhs_publish(input_file)
+            await xhs_publish(input_file, account_name=account_name)
             print("✅ Step 2 完成")
-            log_execution(2, "xiaohongshu_publish", success=True, platform="xiaohongshu")
+            log_execution(2, "xiaohongshu_publish", success=True, platform="xiaohongshu", account=account_name)
         except Exception as e:
             print(f"❌ Step 2 失败: {e}")
-            log_execution(2, "xiaohongshu_publish", success=False, error_msg=str(e), platform="xiaohongshu")
+            log_execution(2, "xiaohongshu_publish", success=False, error_msg=str(e), platform="xiaohongshu", account=account_name)
             sys.exit(1)
     else:
         print("\n⏭️  Step 2: 跳过")
@@ -293,7 +289,7 @@ def main():
     # 抖音专用参数
     douyin_group = parser.add_argument_group("抖音参数")
     douyin_group.add_argument(
-        "--type", choices=["article", "image", "video", "swimwear"],
+        "--type", choices=["article", "image", "swimwear"],
         help="[抖音] 发布类型 (article=文章, image=图文, swimwear=泳装写真)",
     )
     douyin_group.add_argument(

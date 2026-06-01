@@ -23,7 +23,6 @@ UPLOAD_URL = "https://creator.douyin.com/creator-micro/content/upload"
 TYPE_MAP = {
     "article": "文章",
     "image": "图文",
-    "video": "视频",
     "swimwear": "泳装写真",
 }
 
@@ -107,6 +106,104 @@ async def ensure_logged_in(page):
     print("✅ 登录成功！")
 
 
+# ==================== 公共操作 ====================
+
+async def select_music(page):
+    """选择音乐：点击选择音乐 → 收藏 → 使用第一首"""
+    print("  🎵 点击「选择音乐」...")
+    try:
+        music_btn = page.get_by_text("选择音乐", exact=False).last
+        await music_btn.wait_for(state="visible", timeout=10000)
+        await music_btn.click()
+        print("  ✅ 已点击「选择音乐」，等待弹窗加载...")
+
+        await page.wait_for_timeout(3000)
+        fav_btn = page.get_by_text("收藏", exact=True).first
+        await fav_btn.wait_for(state="visible", timeout=10000)
+        await fav_btn.click()
+        print("  ✅ 已点击「收藏」，等待列表加载...")
+
+        await page.wait_for_timeout(5000)
+        use_span = page.locator('span:text("使用")').first
+        await use_span.wait_for(state="attached", timeout=10000)
+        await use_span.dispatch_event("click")
+        print("  ✅ 已点击「使用」，弹窗关闭")
+
+        await page.wait_for_timeout(2000)
+        print("  ✅ 音乐选择完成")
+    except Exception as e:
+        print(f"  ⚠️ 选择音乐失败: {e}")
+
+
+async def set_ai_declaration(page):
+    """设置自主声明：选择「内容由AI生成」"""
+    print("  📋 设置自主声明...")
+    try:
+        declare_btn = page.get_by_text("请选择自主声明", exact=False).first
+        await declare_btn.wait_for(state="visible", timeout=10000)
+        await declare_btn.click()
+        print("  ✅ 已点击「请选择自主声明」，等待弹窗加载...")
+
+        await page.wait_for_timeout(3000)
+
+        ai_option = page.get_by_text("内容由AI生成", exact=False).first
+        await ai_option.wait_for(state="attached", timeout=10000)
+        await ai_option.dispatch_event("click")
+        print("  ✅ 已选择「内容由AI生成」")
+        await page.wait_for_timeout(1000)
+
+        confirm_btn = page.get_by_text("确定", exact=True).first
+        await confirm_btn.wait_for(state="attached", timeout=5000)
+        await confirm_btn.dispatch_event("click")
+        print("  ✅ 已点击「确定」，弹窗关闭")
+        await page.wait_for_timeout(1000)
+        print("  ✅ 自主声明设置完成")
+    except Exception as e:
+        print(f"  ⚠️ 自主声明设置失败: {e}")
+
+
+async def click_publish_and_wait(page):
+    """点击发布按钮并等待发布成功"""
+    print("  📤 点击「发布」...")
+    published = False
+    for text in ["发布", "发表", "立即发布", "提交发布"]:
+        try:
+            btn = page.get_by_text(text, exact=True).first
+            if await btn.is_visible(timeout=5000):
+                await btn.click()
+                print(f"  ✅ 已点击「{text}」")
+                published = True
+                break
+        except Exception:
+            pass
+
+    if not published:
+        try:
+            btn = page.locator('button:has-text("发布")').first
+            if await btn.is_visible(timeout=3000):
+                await btn.click()
+                print("  ✅ 已通过选择器点击发布")
+                published = True
+        except Exception:
+            pass
+
+    if not published:
+        print("  ⚠️ 未找到发布按钮，请手动点击")
+    else:
+        print("  ⏳ 等待发布完成...")
+        try:
+            await page.get_by_text("发布成功").wait_for(state="visible", timeout=60000)
+            print("  ✅ 检测到「发布成功」")
+        except Exception:
+            current_url = page.url
+            try:
+                await page.wait_for_url(lambda url: url != current_url, timeout=60000)
+                print("  ✅ 页面已跳转，发布完成")
+            except Exception:
+                await page.wait_for_timeout(10000)
+                print("  ✅ 等待结束，视为发布完成")
+
+
 # ==================== 类型1：发布文章 ====================
 
 async def publish_article(page, title: str, summary: str, content: str, cover_image: str = ""):
@@ -168,71 +265,15 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
     await page.wait_for_timeout(500)
     print("  ✅ 正文已填入")
 
-    # 步骤6：选择音乐（选择音乐 → 收藏 → 悬停第一条 → 点击使用）
+    # 步骤6：选择音乐
     print("📝 步骤6：选择音乐...")
-    try:
-        print("  🎵 点击「选择音乐」...")
-        music_btn = page.get_by_text("选择音乐", exact=False).last
-        await music_btn.wait_for(state="visible", timeout=10000)
-        await music_btn.click()
-        print("  ✅ 已点击「选择音乐」，等待弹窗加载...")
-
-        await page.wait_for_timeout(3000)
-        fav_btn = page.get_by_text("收藏", exact=True).first
-        await fav_btn.wait_for(state="visible", timeout=10000)
-        await fav_btn.click()
-        print("  ✅ 已点击「收藏」，等待列表加载...")
-
-        await page.wait_for_timeout(5000)
-        use_span = page.locator('span:text("使用")').first
-        await use_span.wait_for(state="attached", timeout=10000)
-        await use_span.dispatch_event("click")
-        print("  ✅ 已点击「使用」，弹窗关闭")
-
-        await page.wait_for_timeout(2000)
-        print("  ✅ 音乐选择完成")
-    except Exception as e:
-        print(f"  ⚠️ 选择音乐失败: {e}")
+    await select_music(page)
 
     await page.wait_for_timeout(1500)
 
-    # 步骤7：自主声明（点击请选择自主声明 → 弹窗中选内容由AI生成 → 确定）
+    # 步骤7：自主声明
     print("📝 步骤7：设置自主声明...")
-    try:
-        declare_btn = page.get_by_text("请选择自主声明", exact=False).first
-        await declare_btn.wait_for(state="visible", timeout=10000)
-        await declare_btn.click()
-        print("  ✅ 已点击「请选择自主声明」，等待弹窗加载...")
-
-        await page.wait_for_timeout(3000)
-
-        ai_options = page.get_by_text("内容由AI生成", exact=False)
-        ai_count = await ai_options.count()
-        print(f"  🔍 找到 {ai_count} 个「内容由AI生成」元素")
-        for i in range(ai_count):
-            item = ai_options.nth(i)
-            try:
-                text = await item.text_content()
-                visible = await item.is_visible(timeout=1000)
-                tag = await item.evaluate("el => el.tagName")
-                print(f"     [{i}] 标签: {tag} | 文本: 「{text}」 | 可见: {visible}")
-            except Exception:
-                print(f"     [{i}] 无法获取信息")
-
-        ai_option = page.get_by_text("内容由AI生成", exact=False).first
-        await ai_option.wait_for(state="attached", timeout=10000)
-        await ai_option.dispatch_event("click")
-        print("  ✅ 已选择「内容由AI生成」")
-        await page.wait_for_timeout(1000)
-
-        confirm_btn = page.get_by_text("确定", exact=True).first
-        await confirm_btn.wait_for(state="attached", timeout=5000)
-        await confirm_btn.dispatch_event("click")
-        print("  ✅ 已点击「确定」，弹窗关闭")
-        await page.wait_for_timeout(1000)
-        print("  ✅ 自主声明设置完成")
-    except Exception as e:
-        print(f"  ⚠️ 自主声明设置失败: {e}")
+    await set_ai_declaration(page)
 
     await page.wait_for_timeout(1000)
 
@@ -297,33 +338,7 @@ async def publish_article(page, title: str, summary: str, content: str, cover_im
 
     # 步骤10：点击发布按钮
     print("📝 步骤10：点击「发布」...")
-    published = False
-    for text in ["发布", "发表", "提交发布"]:
-        try:
-            btn = page.get_by_text(text, exact=True).first
-            if await btn.is_visible(timeout=5000):
-                await btn.click()
-                print(f"  ✅ 已点击「{text}」")
-                published = True
-                break
-        except Exception:
-            pass
-
-    if not published:
-        print("  ⚠️ 未找到发布按钮，请手动点击")
-    else:
-        print("  ⏳ 等待发布完成...")
-        try:
-            await page.get_by_text("发布成功").wait_for(state="visible", timeout=60000)
-            print("  ✅ 检测到「发布成功」")
-        except Exception:
-            current_url = page.url
-            try:
-                await page.wait_for_url(lambda url: url != current_url, timeout=60000)
-                print("  ✅ 页面已跳转，发布完成")
-            except Exception:
-                await page.wait_for_timeout(10000)
-                print("  ✅ 等待结束，视为发布完成")
+    await click_publish_and_wait(page)
 
     print("✅ 全部流程执行完毕！")
 
@@ -424,124 +439,25 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
 
     await page.wait_for_timeout(1000)
 
-    # 步骤5：选择音乐（选择音乐 → 收藏 → 悬停第一条 → 点击使用）
+    # 步骤5：选择音乐
     print("📝 步骤5：选择音乐...")
-    try:
-        print("  🎵 点击「选择音乐」...")
-        music_btn = page.get_by_text("选择音乐", exact=False).last
-        await music_btn.wait_for(state="visible", timeout=10000)
-        await music_btn.click()
-        print("  ✅ 已点击「选择音乐」，等待弹窗加载...")
-
-        await page.wait_for_timeout(3000)
-        fav_btn = page.get_by_text("收藏", exact=True).first
-        await fav_btn.wait_for(state="visible", timeout=10000)
-        await fav_btn.click()
-        print("  ✅ 已点击「收藏」，等待列表加载...")
-
-        await page.wait_for_timeout(5000)
-        use_span = page.locator('span:text("使用")').first
-        await use_span.wait_for(state="attached", timeout=10000)
-        await use_span.dispatch_event("click")
-        print("  ✅ 已点击「使用」，弹窗关闭")
-
-        await page.wait_for_timeout(2000)
-        print("  ✅ 音乐选择完成")
-    except Exception as e:
-        print(f"  ⚠️ 选择音乐失败: {e}")
+    await select_music(page)
 
     await page.wait_for_timeout(1500)
 
-    # 步骤6：自主声明（点击请选择自主声明 → 弹窗中选内容由AI生成 → 确定）
+    # 步骤6：自主声明
     print("📝 步骤6：设置自主声明...")
-    try:
-        declare_btn = page.get_by_text("请选择自主声明", exact=False).first
-        await declare_btn.wait_for(state="visible", timeout=10000)
-        await declare_btn.click()
-        print("  ✅ 已点击「请选择自主声明」，等待弹窗加载...")
-
-        await page.wait_for_timeout(3000)
-
-        ai_options = page.get_by_text("内容由AI生成", exact=False)
-        ai_count = await ai_options.count()
-        print(f"  🔍 找到 {ai_count} 个「内容由AI生成」元素")
-        for i in range(ai_count):
-            item = ai_options.nth(i)
-            try:
-                text = await item.text_content()
-                visible = await item.is_visible(timeout=1000)
-                tag = await item.evaluate("el => el.tagName")
-                print(f"     [{i}] 标签: {tag} | 文本: 「{text}」 | 可见: {visible}")
-            except Exception:
-                print(f"     [{i}] 无法获取信息")
-
-        ai_option = page.get_by_text("内容由AI生成", exact=False).first
-        await ai_option.wait_for(state="attached", timeout=10000)
-        await ai_option.dispatch_event("click")
-        print("  ✅ 已选择「内容由AI生成」")
-        await page.wait_for_timeout(1000)
-
-        confirm_btn = page.get_by_text("确定", exact=True).first
-        await confirm_btn.wait_for(state="attached", timeout=5000)
-        await confirm_btn.dispatch_event("click")
-        print("  ✅ 已点击「确定」，弹窗关闭")
-        await page.wait_for_timeout(1000)
-        print("  ✅ 自主声明设置完成")
-    except Exception as e:
-        print(f"  ⚠️ 自主声明设置失败: {e}")
+    await set_ai_declaration(page)
 
     await page.wait_for_timeout(1000)
 
     # 步骤7：点击发布
     print("📝 步骤7：点击「发布」...")
-    published = False
-
-    for text in ["发布", "发表", "立即发布"]:
-        try:
-            btn = page.get_by_text(text, exact=True).first
-            if await btn.is_visible(timeout=5000):
-                await btn.click()
-                print(f"  ✅ 已点击「{text}」")
-                published = True
-                break
-        except Exception:
-            pass
-
-    if not published:
-        try:
-            btn = page.locator('button:has-text("发布")').first
-            if await btn.is_visible(timeout=3000):
-                await btn.click()
-                print("  ✅ 已通过选择器点击发布")
-                published = True
-        except Exception:
-            pass
-
-    if not published:
-        print("  ⚠️ 未找到发布按钮，请手动点击")
-    else:
-        print("  ⏳ 等待发布完成...")
-        try:
-            await page.get_by_text("发布成功").wait_for(state="visible", timeout=60000)
-            print("  ✅ 检测到「发布成功」")
-        except Exception:
-            current_url = page.url
-            try:
-                await page.wait_for_url(lambda url: url != current_url, timeout=60000)
-                print("  ✅ 页面已跳转，发布完成")
-            except Exception:
-                await page.wait_for_timeout(500)
-                print("  ✅ 等待结束，视为发布完成")
+    await click_publish_and_wait(page)
 
     print("✅ 全部流程执行完毕！")
 
 
-# ==================== 类型3：发布视频（待实现） ====================
-
-async def publish_video(page, title: str, summary: str, content: str, video_path: str = ""):
-    """执行发布视频的完整流程（待实现）"""
-    print("📝 发布视频功能待实现...")
-    print("⚠️ 视频发布功能尚未实现，跳过")
 
 
 # ==================== 入口 ====================
@@ -617,11 +533,6 @@ async def publish(sendType: str = None, title: str = None, content: str = None, 
             images = get_output_images(account_name)
             await publish_image_post(page, title, subtitle, summary, content, images)
 
-        elif sendType == "video":
-            print(f"\n🚀 开始发布视频...")
-            video_path = config.get("video_path", "")
-            await publish_video(page, title, summary, content, video_path)
-
         else:
             print(f"❌ 不支持的发送类型: {sendType}")
 
@@ -636,7 +547,7 @@ async def main():
     """独立运行入口"""
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--type", choices=["article", "image", "video"], help="发布类型")
+    parser.add_argument("--type", choices=["article", "image", "swimwear"], help="发布类型")
     parser.add_argument("--account", default="legacy", help="账号名称 (默认: legacy)")
     args = parser.parse_args()
     await publish(sendType=args.type, account_name=args.account)

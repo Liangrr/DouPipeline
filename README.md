@@ -308,8 +308,8 @@ browser/
 ### Q: 支持哪些平台？
 ### Q: Which platforms are supported?
 
-**A:** 目前支持抖音和小红书。视频类型（`--type video`）待实现。
-**A:** Currently Douyin and Xiaohongshu. Video type (`--type video`) is planned.
+**A:** 目前支持抖音和小红书。
+**A:** Currently Douyin and Xiaohongshu.
 
 ### Q: LLM 生成的 JSON 格式有问题？
 ### Q: LLM-generated JSON has format issues?

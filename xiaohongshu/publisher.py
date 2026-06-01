@@ -1,13 +1,19 @@
 import asyncio
 import json
 import os
+import sys
 from pathlib import Path
 from playwright.async_api import async_playwright
 
+# 导入账号管理模块
+sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
+from account_manager import (
+    get_account_browser_profile,
+    ensure_account_exists,
+)
+
 # ==================== 配置区 ====================
-# 此文件从项目根目录的 run.py 调用，所有相对路径基于项目根目录
 PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-USER_DATA_DIR = os.path.join(PROJECT_ROOT, "browser_profile")
 
 
 def read_json_file(file_path: str) -> dict:
@@ -77,9 +83,14 @@ async def publish_note(page, title: str, content: str, tags: list = None):
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(1000)
 
-    # 步骤2：点击"写长文"（第6个 .creator-tab）
+    # 步骤2：点击"写长文"
     print("📝 步骤2：点击写长文...")
-    await page.locator('.header-tabs .creator-tab').nth(6).click()
+    write_btn = page.get_by_text("写长文", exact=True)
+    if await write_btn.is_visible(timeout=5000):
+        await write_btn.click()
+    else:
+        # 兜底：按 tab 序号定位
+        await page.locator('.header-tabs .creator-tab').nth(6).click()
     print("  ✅ 点击成功")
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(1000)
@@ -264,8 +275,11 @@ async def publish_note(page, title: str, content: str, tags: list = None):
     print("✅ 发布完成！")
 
 
-async def publish(file_path: str):
+async def publish(file_path: str, account_name: str = "legacy"):
     """主函数：读取 JSON 文件并发布到小红书"""
+    # 确保账号存在
+    ensure_account_exists(account_name)
+
     # 1. 读取 JSON 文件
     print(f"📖 正在读取文件: {file_path}")
     article = read_json_file(file_path)
@@ -274,15 +288,16 @@ async def publish(file_path: str):
     if article.get("tags"):
         print(f"✅ 标签: {', '.join(article['tags'])}")
 
-    # 2. 创建持久化浏览器目录
-    Path(USER_DATA_DIR).mkdir(exist_ok=True)
-    print(f"📂 浏览器数据目录: {USER_DATA_DIR}")
+    # 2. 账号专属浏览器目录
+    user_data_dir = get_account_browser_profile(account_name)
+    Path(user_data_dir).mkdir(exist_ok=True)
+    print(f"📂 浏览器数据目录: {user_data_dir}")
 
     # 3. 启动浏览器
     print("\n🌐 正在启动浏览器...")
     p = await async_playwright().start()
     context = await p.chromium.launch_persistent_context(
-        user_data_dir=USER_DATA_DIR,
+        user_data_dir=user_data_dir,
         headless=False,
     )
 
@@ -320,8 +335,9 @@ async def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, help="输入 JSON 文件路径")
+    parser.add_argument("--account", default="legacy", help="账号名称 (默认: legacy)")
     args = parser.parse_args()
-    await publish(args.input)
+    await publish(args.input, account_name=args.account)
 
 
 if __name__ == "__main__":

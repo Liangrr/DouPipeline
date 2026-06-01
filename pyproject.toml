@@ -5,8 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "browser-use>=0.12.9",
-    "langchain-openai==1.1.7",
+    "openai>=1.0.0",
     "playwright>=1.60.0",
     "pillow",
     "python-dotenv>=1.0.0",
