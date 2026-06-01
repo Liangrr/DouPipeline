@@ -6,8 +6,64 @@
 
 ---
 
+## ⚡ 快速配置（拿到项目后第一件事）
+
+### 1. 复制配置文件模板
+
+```bash
+cp .env.example .env
+```
+
+### 2. 编辑 `.env`，填写你的 API 密钥
+
+```env
+# ========== 必须修改（不改跑不起来！）==========
+
+# 你的大模型 API 密钥（去对应平台申请，下面有获取方法）
+MIMO_API_KEY=把这里换成你的密钥
+
+# ========== 以下一般不用改（想换模型时再改）==========
+
+# 大模型 API 地址（默认是小米 MiMo）
+MIMO_BASE_URL=https://token-plan-cn.xiaomimimo.com/v1
+
+# 使用的模型名称
+MIMO_MODEL=mimo-v2.5
+```
+
+### 3. API 密钥怎么获取？
+
+| 模型平台 | 官网 | 获取密钥 |
+|---------|------|---------|
+| **小米 MiMo**（默认） | [token-plan-cn.xiaomimimo.com](https://token-plan-cn.xiaomimimo.com) | 注册后在控制台获取 API Key |
+| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com) | 注册后在 API Keys 页面创建 |
+| **通义千问** | [dashscope.aliyun.com](https://dashscope.aliyun.com) | 注册后在 API-KEY 管理页面创建 |
+| **其他兼容 OpenAI 接口的模型** | 对应平台 | 对应平台获取 |
+
+> 💡 **只要兼容 OpenAI 接口的模型都能用！** 修改 `MIMO_BASE_URL` 和 `MIMO_MODEL` 即可。
+>
+> 例如换成 DeepSeek：
+> ```env
+> MIMO_API_KEY=sk-xxxxxxxxxxxxxxxx
+> MIMO_BASE_URL=https://api.deepseek.com/v1
+> MIMO_MODEL=deepseek-chat
+> ```
+
+### 4. 还有哪些可以改？
+
+| 配置文件 | 改什么 | 什么时候需要改 |
+|---------|--------|--------------|
+| `.env` | 大模型 API 地址、密钥、模型名 | **必须改！** 不改跑不起来 |
+| `prompts.json` | AI 的角色设定和写作风格 | 想让 AI 写不同风格时改 |
+| `run.py` 中的默认主题 | `美女`（抖音）、`宝妈育儿`（小红书） | 想换默认主题时改 |
+
+> ⚠️ **`.env` 包含你的密钥，绝对不要分享给别人或提交到 git！**
+
+---
+
 ## 📖 目录
 
+- [快速配置（拿到项目后第一件事）](#-快速配置拿到项目后第一件事)
 - [这个工具能干什么？](#-这个工具能干什么)
 - [运行效果预览](#-运行效果预览)
 - [环境准备（必看！）](#-环境准备必看)
