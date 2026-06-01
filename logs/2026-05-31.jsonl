@@ -64,3 +64,37 @@
 {"time": "2026-05-31 19:51:32", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
 {"time": "2026-05-31 19:54:47", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
 {"time": "2026-05-31 19:55:23", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:18:13", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:20:33", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:26:08", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 20:27:09", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:41:37", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:44:40", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 20:45:41", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:47:03", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:52:32", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:55:27", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 20:56:05", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:57:06", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:58:06", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:01:27", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:01:43", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 21:02:24", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 21:02:38", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:05:55", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:14:52", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 21:15:30", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 21:28:07", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:29:03", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:32:08", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:33:27", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:52:56", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:54:13", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 21:55:11", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "fail", "error": "Expecting ',' delimiter: line 9 column 2 (char 3197)"}
+{"time": "2026-05-31 21:56:05", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "fail", "error": "Expecting ',' delimiter: line 8 column 2575 (char 3552)"}
+{"time": "2026-05-31 21:59:00", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 22:07:31", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 22:08:10", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 23:20:22", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 23:28:03", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 23:28:42", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
