@@ -24,6 +24,7 @@ TYPE_MAP = {
     "article": "文章",
     "image": "图文",
     "video": "视频",
+    "swimwear": "泳装写真",
 }
 
 
@@ -611,8 +612,8 @@ async def publish(sendType: str = None, title: str = None, content: str = None, 
             print(f"\n🚀 开始发布文章...")
             await publish_article(page, title, summary, content, cover_image)
 
-        elif sendType == "image":
-            print(f"\n🚀 开始发布图文...")
+        elif sendType in ("image", "swimwear"):
+            print(f"\n🚀 开始发布{TYPE_MAP.get(sendType, '图文')}...")
             images = get_output_images(account_name)
             await publish_image_post(page, title, subtitle, summary, content, images)
 

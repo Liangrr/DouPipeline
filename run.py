@@ -5,7 +5,8 @@
 抖音链路 (douyin):
     python run.py --platform douyin                         # 默认主题"美女"
     python run.py --platform douyin --topic "旅行攻略"      # 指定主题
-    python run.py --platform douyin --type article          # 发布类型: article/image
+    python run.py --platform douyin --type article          # 发布类型: article/image/swimwear
+    python run.py --platform douyin --type swimwear --count 6  # 泳装写真
     python run.py --platform douyin --count 3               # 生成图片数量
     python run.py --platform douyin --step 3                # 从发布步骤开始
     python run.py --platform douyin --only 3                # 只发布
@@ -242,7 +243,8 @@ def main():
   抖音链路:
     python run.py --platform douyin                         # 默认主题"美女"
     python run.py --platform douyin --topic "旅行攻略"      # 指定主题
-    python run.py --platform douyin --type article          # 发布类型: article/image
+    python run.py --platform douyin --type article          # 发布类型: article/image/swimwear
+    python run.py --platform douyin --type swimwear --count 6  # 泳装写真，生成6张图
     python run.py --platform douyin --count 3               # 生成图片数量
     python run.py --platform douyin --only 1                # 只生成内容
     python run.py --platform douyin --only 3                # 只发布
@@ -292,8 +294,8 @@ def main():
     # 抖音专用参数
     douyin_group = parser.add_argument_group("抖音参数")
     douyin_group.add_argument(
-        "--type", choices=["article", "image", "video"],
-        help="[抖音] 发布类型 (article=文章, image=图文)",
+        "--type", choices=["article", "image", "video", "swimwear"],
+        help="[抖音] 发布类型 (article=文章, image=图文, swimwear=泳装写真)",
     )
     douyin_group.add_argument(
         "--count", type=int,
