@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="720" font-family="'Menlo', 'Monaco', 'Courier New', monospace" font-size="13">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="titlebar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3d3d3d"/>
+      <stop offset="100%" stop-color="#2d2d2d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Terminal Window -->
+  <rect x="20" y="20" width="740" height="680" rx="10" fill="#1e1e1e" filter="url(#shadow)"/>
+
+  <!-- Title Bar -->
+  <rect x="20" y="20" width="740" height="36" rx="10" fill="url(#titlebar)"/>
+  <rect x="20" y="46" width="740" height="10" fill="url(#titlebar)"/>
+
+  <!-- Traffic Lights -->
+  <circle cx="42" cy="38" r="6" fill="#ff5f57"/>
+  <circle cx="62" cy="38" r="6" fill="#febc2e"/>
+  <circle cx="82" cy="38" r="6" fill="#28c840"/>
+
+  <!-- Title Text -->
+  <text x="390" y="43" text-anchor="middle" fill="#999" font-size="12">Terminal — run.py</text>
+
+  <!-- Content -->
+  <text x="40" y="82" fill="#ccc">
+    <tspan fill="#6a9955">$</tspan> <tspan fill="#dcdcaa">uv run python</tspan> <tspan fill="#ce9178">run.py --platform douyin --topic "旅行攻略"</tspan>
+  </text>
+
+  <!-- Divider -->
+  <text x="40" y="108" fill="#569cd6">============================================================</text>
+  <text x="40" y="128" fill="#dcdcaa">🎬  抖音链路  [账号: legacy]</text>
+  <text x="40" y="148" fill="#569cd6">============================================================</text>
+
+  <!-- Step 1 -->
+  <text x="40" y="180" fill="#dcdcaa">🚀 Step 1: 内容生成 (generate)</text>
+  <text x="40" y="198" fill="#569cd6">------------------------------------------------------------</text>
+  <text x="40" y="218" fill="#9cdcfe">🤖 正在调用 mimo-v2.5 生成内容...</text>
+  <text x="60" y="238" fill="#b5cea8">   类型: image | 主题: 旅行攻略</text>
+  <text x="40" y="258" fill="#6a9955">📝 原始输出:</text>
+  <text x="60" y="278" fill="#808080">   {"title":"巴厘岛最美日落地...", "prompt":["一位气质清冷的东方女性..."]}</text>
+  <text x="40" y="302" fill="#6a9955">🧹 清理提示词，优化豆包兼容性...</text>
+  <text x="40" y="322" fill="#6a9955">✅ Step 1 完成 -> accounts/legacy/doubao.json</text>
+
+  <!-- Step 2 -->
+  <text x="40" y="354" fill="#dcdcaa">🚀 Step 2: 豆包图片生成 (doubao)</text>
+  <text x="40" y="372" fill="#569cd6">------------------------------------------------------------</text>
+  <text x="40" y="392" fill="#9cdcfe">🤖 豆包批量提问 &amp; 保存图片  [账号: legacy]</text>
+  <text x="40" y="412" fill="#b5cea8">📋 共 8 条 prompt</text>
+  <text x="40" y="432" fill="#b5cea8">🧹 已清空输出目录: accounts/legacy/doubao_output</text>
+  <text x="40" y="452" fill="#9cdcfe">🌐 启动浏览器（持久化模式）...</text>
+  <text x="40" y="472" fill="#6a9955">🎉 已登录！（复用上次会话）</text>
+  <text x="40" y="496" fill="#808080">📌 [1/8] Prompt: 一位气质清冷的东方女性站在巴厘岛海边...</text>
+  <text x="60" y="516" fill="#808080">📝 正在输入 prompt...</text>
+  <text x="60" y="536" fill="#808080">🚀 发送 prompt...</text>
+  <text x="60" y="556" fill="#808080">⏳ 等待图片生成（超时 180 秒）...</text>
+  <text x="60" y="576" fill="#808080">🔍 检测到新图片</text>
+  <text x="60" y="596" fill="#808080">🔍 点击图片打开预览...</text>
+  <text x="60" y="616" fill="#6a9955">✅ 高清图已保存！ (485.2 KB)</text>
+  <text x="60" y="636" fill="#6a9955">✂️ 已裁切左上角水印 (90×43px)</text>
+
+  <!-- Summary -->
+  <text x="40" y="668" fill="#569cd6">============================================================</text>
+  <text x="40" y="688" fill="#dcdcaa">✨ 全部完成！成功: 8/8</text>
+  <text x="40" y="704" fill="#569cd6">============================================================</text>
+
+  <!-- Cursor -->
+  <rect x="40" y="716" width="8" height="16" fill="#ccc" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0;0.7" dur="1s" repeatCount="indefinite"/>
+  </rect>
+</svg>
