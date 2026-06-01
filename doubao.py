@@ -19,6 +19,7 @@ from account_manager import (
     PROJECT_ROOT,
     get_account_config_path,
     get_account_output_dir,
+    get_account_backup_dir,
 )
 
 # ====== 配置 ======
@@ -49,6 +50,54 @@ def clear_output_dir(output_dir: str):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     print(f"🧹 已清空输出目录: {output_dir}")
+
+
+def backup_current_run(account_name: str):
+    """
+    备份当前的图片和JSON提示词到 backups/<timestamp>/ 目录。
+    在 clear_output_dir 之前调用，保留上一次运行的数据。
+    """
+    output_dir = get_account_output_dir(account_name)
+    config_path = get_account_config_path(account_name)
+
+    # 检查是否有需要备份的内容
+    has_config = os.path.exists(config_path)
+    has_images = os.path.isdir(output_dir) and any(
+        f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp'))
+        for f in os.listdir(output_dir)
+    )
+
+    if not has_config and not has_images:
+        return
+
+    # 用 doubao.json 的修改时间作为备份目录名，保持与这批数据的一致性
+    if has_config:
+        ts = os.path.getmtime(config_path)
+        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(ts))
+    else:
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+
+    backup_dir = get_account_backup_dir(account_name)
+    dest_dir = os.path.join(backup_dir, timestamp)
+
+    # 同一时间戳目录已存在则跳过（防重复）
+    if os.path.exists(dest_dir):
+        return
+
+    os.makedirs(dest_dir, exist_ok=True)
+
+    # 备份 JSON 配置
+    if has_config:
+        shutil.copy2(config_path, os.path.join(dest_dir, "doubao.json"))
+
+    # 备份图片
+    if has_images:
+        for filename in sorted(os.listdir(output_dir)):
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                src = os.path.join(output_dir, filename)
+                shutil.copy2(src, os.path.join(dest_dir, filename))
+
+    print(f"💾 已备份上一次运行数据到: {dest_dir}")
 
 
 async def wait_for_input_box(page: Page, timeout: float = 10) -> bool:
@@ -468,6 +517,9 @@ async def run_doubao(account_name: str = "legacy"):
     prompts = load_prompts(prompt_file)
     total = len(prompts)
     print(f"📋 共 {total} 条 prompt")
+
+    # 备份上一次运行的图片和提示词（在清空之前）
+    backup_current_run(account_name)
 
     clear_output_dir(output_dir)
 

@@ -24,7 +24,7 @@ if not API_KEY:
         "请在 .env 文件或系统环境变量中配置: MIMO_API_KEY=your_key_here"
     )
 DEFAULT_SEND_TYPE = "image"
-DEFAULT_PROMPT_COUNT = 9
+DEFAULT_PROMPT_COUNT = 3
 
 DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "doubao.json")
 

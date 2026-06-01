@@ -84,11 +84,11 @@ async def run_douyin_pipeline(args):
     start_step = args.step or 1
     only_step = args.only
     content_type = args.type or "image"
-    # 文章模式只需 1 张封面图，图文模式默认 8 张
+    # 文章模式只需 1 张封面图，图文模式默认 3 张
     if content_type == "article":
         count = args.count or 1
     else:
-        count = args.count or 8
+        count = args.count or 3
 
     # --- Step 1: 内容生成 ---
     if (start_step <= 1) and (only_step is None or only_step == 1):
@@ -294,7 +294,7 @@ def main():
     )
     douyin_group.add_argument(
         "--count", type=int,
-        help="[抖音] 生成图片数量 (默认 图文模式 9 图，文章模式 1 图)",
+        help="[抖音] 生成图片数量 (默认 图文模式 3 图，文章模式 1 图)",
     )
     # 小红书专用参数
     xhs_group = parser.add_argument_group("小红书参数")

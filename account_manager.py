@@ -36,6 +36,11 @@ def get_account_output_dir(account_name: str) -> str:
     return os.path.join(get_account_dir(account_name), "doubao_output")
 
 
+def get_account_backup_dir(account_name: str) -> str:
+    """获取账号的备份目录"""
+    return os.path.join(get_account_dir(account_name), "backups")
+
+
 def list_accounts() -> list:
     """列出所有已创建的账号"""
     if not os.path.exists(ACCOUNTS_ROOT):
