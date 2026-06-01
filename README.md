@@ -442,7 +442,7 @@ uv run python run.py --platform douyin --topic "AI面试题"
 uv run python run.py --platform douyin --type image
 
 # 发布文章（长文 + 封面图）
-uv run python run.py --platform douyin --type article --topic "AI Agent面试"
+uv run python run.py --platform douyin --type article --topic "海边的夏日记忆"
 
 # 发布泳装写真
 uv run python run.py --platform douyin --type swimwear --count 6
@@ -521,7 +521,7 @@ uv run python run.py --help
 | 类型 | 参数 | 说明 |
 |------|------|------|
 | 图文 | `--type image` | AI 生成多张图片，发布为图文相册（默认） |
-| 文章 | `--type article` | AI 生成长文 + 1 张封面图，发布为文章 |
+| 文章 | `--type article` | AI 生成故事长文 + 1 张封面图，发布为文章 |
 | 泳装 | `--type swimwear` | AI 生成泳装写真图片，发布为图文相册 |
 
 ---
