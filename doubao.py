@@ -123,6 +123,9 @@ async def wait_for_input_box(page: Page, timeout: float = 10) -> bool:
 async def ensure_logged_in(page: Page):
     await page.goto(DOUBAO_URL, wait_until="domcontentloaded", timeout=60000)
 
+    # 检测人机校验（登录前/页面加载后）
+    await handle_captcha(page)
+
     if await wait_for_input_box(page, timeout=10):
         print("🎉 已登录！（复用上次会话）")
         return
@@ -135,11 +138,46 @@ async def ensure_logged_in(page: Page):
 
     await page.reload(wait_until="domcontentloaded", timeout=60000)
 
+    # 登录后也可能触发校验
+    await handle_captcha(page)
+
     if await wait_for_input_box(page, timeout=8):
         print("✅ 登录成功！")
         return
 
     raise RuntimeError("❌ 登录失败，请重新运行脚本")
+
+
+async def handle_captcha(page: Page) -> bool:
+    """检测人机校验，如果有则等待用户手动解决。返回 True 表示检测到了校验。"""
+    captcha_selectors = [
+        'iframe[src*="captcha"]',
+        'iframe[src*="verify"]',
+        'iframe[src*="slide"]',
+        '[class*="captcha"]',
+        '[class*="verify"]',
+        '[id*="captcha"]',
+        '[id*="verify"]',
+        'div:has-text("请完成验证")',
+        'div:has-text("滑动完成验证")',
+        'div:has-text("拖动滑块")',
+        'div:has-text("请拖动下方滑块")',
+        'div:has-text("安全验证")',
+    ]
+    for sel in captcha_selectors:
+        try:
+            el = page.locator(sel).first
+            if await el.is_visible(timeout=1500):
+                print("\n" + "=" * 60)
+                print("🔒 检测到人机校验！请在浏览器中手动完成验证")
+                print("   完成后回到这里按回车继续")
+                print("=" * 60)
+                input("\n✅ 验证完成按回车 >>> ")
+                await page.wait_for_timeout(2000)
+                return True
+        except Exception:
+            continue
+    return False
 
 
 async def close_popups(page: Page):
@@ -221,15 +259,40 @@ async def input_prompt_and_submit(page: Page, prompt: str) -> bool:
     return True
 
 
+async def is_still_generating(page: Page) -> bool:
+    """检测豆包是否还在流式输出中"""
+    generating_indicators = [
+        '[class*="loading"]',
+        '[class*="typing"]',
+        '[class*="cursor"][class*="blink"]',
+        '[class*="generating"]',
+        '[class*="stop"]',           # 停止按钮出现 = 还在生成
+        'button:has-text("停止")',
+        'button:has-text("Stop")',
+        '[aria-label="停止生成"]',
+        '[aria-label="Stop generating"]',
+    ]
+    for sel in generating_indicators:
+        try:
+            el = page.locator(sel).first
+            if await el.is_visible(timeout=800):
+                return True
+        except Exception:
+            continue
+    return False
+
+
 async def check_refusal(page: Page) -> bool:
-    """检查豆包最新回复是否包含拒绝话术"""
+    """检查豆包最新回复是否包含拒绝话术（仅在回复完成后检测）"""
+    # 先检测是否还在生成中，还在生成就不要判断为拒绝
+    if await is_still_generating(page):
+        return False
+
     try:
+        # 只用精确选择器，不用宽泛的 [class*="message"]
         message_selectors = [
             '[data-testid="chat-message-content"]',
             '.message-content',
-            '[class*="message"]',
-            '[class*="reply"]',
-            '[class*="response"]',
         ]
 
         all_text = ""
@@ -240,17 +303,14 @@ async def check_refusal(page: Page) -> bool:
                 if count > 0:
                     last_msg = msgs.nth(count - 1)
                     text = await last_msg.inner_text(timeout=3000)
-                    if text and len(text) > 5:
+                    if text and len(text) > 10:
                         all_text = text
                         break
             except Exception:
                 continue
 
         if not all_text:
-            try:
-                all_text = await page.locator('body').inner_text(timeout=5000)
-            except Exception:
-                return False
+            return False
 
         text_lower = all_text.lower()
         for kw in REFUSAL_KEYWORDS:
@@ -313,41 +373,45 @@ def remove_watermark(image_path: str) -> bool:
         return False
 
 
-async def wait_for_image_and_save(page: Page, index: int, output_dir: str) -> bool:
+async def wait_for_image_and_save(page: Page, index: int, output_dir: str, pre_found_src: str = None) -> bool:
     """等待图片完全生成，点击预览获取高清图并保存"""
-    print(f"⏳ 等待图片生成（超时 {TIMEOUT_IMAGE} 秒）...")
+    found_image = pre_found_src
 
-    # 记录已有的图片
-    old_srcs = set()
-    for sel in ['img[src*="byteimg"]', 'img[src*="tos-cn"]', 'img[src*="doubao"]']:
-        try:
-            imgs = page.locator(sel)
-            for i in range(await imgs.count()):
-                s = await imgs.nth(i).get_attribute("src") or ""
-                if s:
-                    old_srcs.add(s)
-        except Exception:
-            pass
+    if not found_image:
+        print(f"⏳ 等待图片生成（超时 {TIMEOUT_IMAGE} 秒）...")
 
-    start = time.monotonic()
-    found_image = None
+        # 记录已有的图片
+        old_srcs = set()
+        for sel in ['img[src*="byteimg"]', 'img[src*="tos-cn"]', 'img[src*="doubao"]']:
+            try:
+                imgs = page.locator(sel)
+                for i in range(await imgs.count()):
+                    s = await imgs.nth(i).get_attribute("src") or ""
+                    if s:
+                        old_srcs.add(s)
+            except Exception:
+                pass
 
-    while time.monotonic() - start < TIMEOUT_IMAGE:
-        await page.wait_for_timeout(2000)
-        src = await find_new_image(page, old_srcs)
-        if src:
-            found_image = src
-            print(f"🔍 检测到新图片: {src[:80]}...")
-            break
-        elapsed = int(time.monotonic() - start)
-        if elapsed > 0 and elapsed % 15 == 0:
-            print(f"   等待生成中... ({elapsed}s/{TIMEOUT_IMAGE}s)")
+        start = time.monotonic()
+
+        while time.monotonic() - start < TIMEOUT_IMAGE:
+            if await handle_captcha(page):
+                start = time.monotonic()  # 校验后重置计时器
+            await page.wait_for_timeout(2000)
+            src = await find_new_image(page, old_srcs)
+            if src:
+                found_image = src
+                print(f"🔍 检测到新图片: {src[:80]}...")
+                break
+            elapsed = int(time.monotonic() - start)
+            if elapsed > 0 and elapsed % 15 == 0:
+                print(f"   等待生成中... ({elapsed}s/{TIMEOUT_IMAGE}s)")
 
     if not found_image:
         print("❌ 未检测到生成的图片")
         return False
 
-    print("   确认图片生成完毕...")
+    print(f"   确认图片生成完毕: {found_image[:80]}...")
     await page.wait_for_timeout(2000)
 
     # ========== 点击图片打开预览，拦截高清原图响应 ==========
@@ -558,6 +622,7 @@ async def run_doubao(account_name: str = "legacy"):
 
                 if i > 1:
                     await page.goto(DOUBAO_URL, wait_until="domcontentloaded", timeout=60000)
+                    await handle_captcha(page)
                     await wait_for_input_box(page, timeout=8)
 
                 # --- 重试逻辑 ---
@@ -575,19 +640,51 @@ async def run_doubao(account_name: str = "legacy"):
                         print(f"❌ [{i}] 提交 prompt 失败")
                         break
 
+                    # 检测人机校验
+                    await handle_captcha(page)
+
                     # 等待豆包回复
                     print("   等待豆包回复...")
                     refused = False
-                    for poll_i in range(3):
-                        await page.wait_for_timeout(4000)
+                    pre_found_image = None
+                    wait_start = time.monotonic()
+                    wait_max = 90        # 基础等待上限
+                    absolute_max = 180   # 绝对上限（还在生成时延长）
+                    while True:
+                        elapsed = int(time.monotonic() - wait_start)
+
+                        # 绝对超时保护
+                        if elapsed >= absolute_max:
+                            print(f"   ⏰ 绝对超时 ({absolute_max}s)，强制继续")
+                            break
+
+                        # 基础超时：如果还在生成中则延长等待
+                        if elapsed >= wait_max:
+                            if await is_still_generating(page):
+                                print(f"   ⏳ 仍在生成中，延长等待... ({elapsed}s)")
+                            else:
+                                break
+
+                        # 每轮等待前检测人机校验
+                        if await handle_captcha(page):
+                            wait_start = time.monotonic()
+                        await page.wait_for_timeout(5000)
+                        elapsed = int(time.monotonic() - wait_start)
+
+                        # 先检测图片
+                        old_srcs_check = set()
+                        found = await find_new_image(page, old_srcs_check)
+                        if found:
+                            pre_found_image = found
+                            print(f"   ✅ 已检测到图片 ({elapsed}s)")
+                            break
+
+                        # 再检测拒绝（只有确认不在生成中才判断）
                         if await check_refusal(page):
                             refused = True
                             break
-                        old_srcs_check = set()
-                        if await find_new_image(page, old_srcs_check):
-                            print(f"   已检测到图片，跳过剩余检查")
-                            break
-                        print(f"   等待中... ({(poll_i + 1) * 4}s/12s)")
+
+                        print(f"   等待中... ({elapsed}s)")
 
                     if refused:
                         print(f"⚠️ [{i}] 豆包拒绝生成 (attempt {attempt + 1}/{MAX_RETRY + 1})")
@@ -600,7 +697,7 @@ async def run_doubao(account_name: str = "legacy"):
                             skip_count += 1
                             break
 
-                    if await wait_for_image_and_save(page, i, output_dir):
+                    if await wait_for_image_and_save(page, i, output_dir, pre_found_src=pre_found_image):
                         success_count += 1
                         saved = True
                         break
