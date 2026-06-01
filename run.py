@@ -45,6 +45,7 @@ from account_manager import (
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
+XIAOHONGSHU_JSON_PATH = os.path.join(BASE_DIR, "xiaohongshu.json")
 
 
 def log_execution(step_num: int, step_name: str, success: bool, error_msg: str = "", platform: str = "", account: str = ""):
@@ -102,8 +103,6 @@ async def run_douyin_pipeline(args):
                 prompt_count=count,
                 output_path=config_path,
             )
-            with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump(config, f, ensure_ascii=False, indent=2)
             print(f"✅ Step 1 完成 -> {config_path}")
             log_execution(1, "generate", success=True, platform="douyin", account=account_name)
         except Exception as e:

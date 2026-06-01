@@ -203,6 +203,7 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "pillow" },
     { name = "playwright" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
@@ -211,6 +212,7 @@ requires-dist = [
     { name = "langchain-openai", specifier = "==1.1.7" },
     { name = "pillow" },
     { name = "playwright", specifier = ">=1.60.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
 ]
 
 [[package]]

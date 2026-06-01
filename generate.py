@@ -5,10 +5,23 @@ import sys
 import os
 from openai import AsyncOpenAI
 
+# 加载 .env 文件
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+except ImportError:
+    pass  # python-dotenv 未安装时忽略，依赖系统环境变量
+
 # ==================== 配置区 ====================
-API_KEY = "tp-c1g7nehvjiv148ml2rsiv09eanuee3culvm2nkudmr4it3fc"
-BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1"
-MODEL = "mimo-v2.5"
+API_KEY = os.environ.get("MIMO_API_KEY", "")
+BASE_URL = os.environ.get("MIMO_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1")
+MODEL = os.environ.get("MIMO_MODEL", "mimo-v2.5")
+
+if not API_KEY:
+    raise EnvironmentError(
+        "未设置 MIMO_API_KEY 环境变量。\n"
+        "请在 .env 文件或系统环境变量中配置: MIMO_API_KEY=your_key_here"
+    )
 DEFAULT_SEND_TYPE = "image"
 DEFAULT_PROMPT_COUNT = 9
 
