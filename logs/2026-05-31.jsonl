@@ -1,0 +1,100 @@
+{"time": "2026-05-31 12:19:44", "platform": "xiaohongshu", "step": 1, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 12:22:12", "platform": "douyin", "step": 1, "step_name": "generate", "status": "fail", "error": "generate_content() got an unexpected keyword argument 'system_prompt_path'"}
+{"time": "2026-05-31 12:25:13", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 12:28:19", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 12:28:59", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"发布作品\").first\n"}
+{"time": "2026-05-31 12:30:11", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"发布作品\").first\n"}
+{"time": "2026-05-31 12:31:35", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"发布作品\").first\n"}
+{"time": "2026-05-31 12:39:50", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Page.set_input_files: Error: Non-multiple file input can only accept single file\nCall log:\n  - waiting for locator(\"input[type=\\\"file\\\"]\")\n    - locator resolved to 2 elements. Proceeding with the first one: <input type=\"file\" tabindex=\"-1\" accept=\"video/x-flv,video/mp4,video/x-m4v,video/*,.flv,.avi,.wmv,.webm,.ts,.mp4,.mpeg4,.mov,.m4v,.mpg,.mkv,.m4\"/>\n"}
+{"time": "2026-05-31 12:41:37", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_text(\"下一步\").first\n"}
+{"time": "2026-05-31 12:45:01", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 12:46:36", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 12:49:14", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 12:53:17", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 12:56:44", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 12:57:21", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 13:00:32", "platform": "xiaohongshu", "step": 1, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:12:43", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:13:53", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "fail", "error": "BrowserContext.close: Connection closed while reading from the driver"}
+{"time": "2026-05-31 13:14:08", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:14:32", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:15:49", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:19:15", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "fail", "error": "BrowserContext.close: Connection closed while reading from the driver"}
+{"time": "2026-05-31 13:19:35", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:20:00", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:20:17", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:20:41", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:21:34", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:25:26", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 13:26:02", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 13:40:42", "platform": "douyin", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:41:21", "platform": "douyin", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 13:41:51", "platform": "douyin", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 13:46:57", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "fail", "error": "No module named 'openai'"}
+{"time": "2026-05-31 13:47:32", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:48:09", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "fail", "error": "Page.goto: Target page, context or browser has been closed\nCall log:\n  - navigating to \"https://creator.xiaohongshu.com/new/home\", waiting until \"networkidle\"\n"}
+{"time": "2026-05-31 13:48:15", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "fail", "error": "No module named 'openai'"}
+{"time": "2026-05-31 13:49:35", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:50:24", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:53:54", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:54:20", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 13:56:53", "platform": "xiaohongshu", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 13:57:20", "platform": "xiaohongshu", "step": 2, "step_name": "xiaohongshu_publish", "status": "success"}
+{"time": "2026-05-31 14:44:27", "platform": "douyin", "account": "test_account", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:45:06", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:45:57", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:47:13", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:50:39", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 14:51:15", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 14:53:59", "platform": "douyin", "account": "asuria", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 14:54:36", "platform": "douyin", "account": "asuria", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 14:55:19", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "fail", "error": "Page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"text=发布文章\")\n"}
+{"time": "2026-05-31 15:01:19", "platform": "douyin", "account": "asuria", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 15:01:59", "platform": "douyin", "account": "asuria", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 15:02:57", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 15:07:55", "platform": "douyin", "account": "asuria", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 19:41:25", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:47:05", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:47:06", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 19:48:02", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:48:02", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 19:48:15", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 19:48:51", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "fail", "error": "Expecting value: line 1 column 1 (char 0)"}
+{"time": "2026-05-31 19:50:44", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:51:32", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 19:54:47", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 19:55:23", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:18:13", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:20:33", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:26:08", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 20:27:09", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:41:37", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:44:40", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 20:45:41", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:47:03", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:52:32", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:55:27", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 20:56:05", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 20:57:06", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 20:58:06", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:01:27", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:01:43", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 21:02:24", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 21:02:38", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:05:55", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:14:52", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 21:15:30", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 21:28:07", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:29:03", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:32:08", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:33:27", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:52:56", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 21:54:13", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "fail", "error": "退出码: 1"}
+{"time": "2026-05-31 21:55:11", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "fail", "error": "Expecting ',' delimiter: line 9 column 2 (char 3197)"}
+{"time": "2026-05-31 21:56:05", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "fail", "error": "Expecting ',' delimiter: line 8 column 2575 (char 3552)"}
+{"time": "2026-05-31 21:59:00", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 22:07:31", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 22:08:10", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
+{"time": "2026-05-31 23:20:22", "platform": "douyin", "account": "legacy", "step": 1, "step_name": "generate", "status": "success"}
+{"time": "2026-05-31 23:28:03", "platform": "douyin", "account": "legacy", "step": 2, "step_name": "doubao", "status": "success"}
+{"time": "2026-05-31 23:28:42", "platform": "douyin", "account": "legacy", "step": 3, "step_name": "douyin_publish", "status": "success"}
