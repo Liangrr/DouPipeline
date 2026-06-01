@@ -31,27 +31,29 @@ DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "doubao.json")
 
 # ==================== 提示词加载 ====================
 
-PROMPTS_FILE = os.path.join(PROJECT_ROOT, "prompts.json")
+PROMPTS_DIR = os.path.join(PROJECT_ROOT, "prompts")
 
 
-def load_prompts_config() -> dict:
-    """从 prompts.json 加载所有提示词配置"""
-    with open(PROMPTS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-PROMPTS_CONFIG = load_prompts_config()
+def _load_prompt_file(category: str, name: str) -> str:
+    """从 prompts/{category}/{name}.md 加载提示词文件"""
+    path = os.path.join(PROMPTS_DIR, category, f"{name}.md")
+    if not os.path.exists(path):
+        return ""
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read().strip()
 
 
 def build_system_prompt(send_type: str, prompt_count: int) -> str:
     """根据内容类型构建完整的 system prompt（角色 + 指令）"""
-    roles = PROMPTS_CONFIG.get("roles", {})
-    instructions = PROMPTS_CONFIG.get("system_prompts", {})
-
     # video 复用 article 的角色
     role_key = send_type if send_type != "video" else "article"
-    role = roles.get(role_key, roles.get("article", ""))
-    instruction = instructions.get(send_type, instructions.get("article", ""))
+    role = _load_prompt_file("roles", role_key)
+    if not role:
+        role = _load_prompt_file("roles", "article")
+
+    instruction = _load_prompt_file("instructions", send_type)
+    if not instruction:
+        instruction = _load_prompt_file("instructions", "article")
 
     # 替换模板变量（如 {prompt_count}）
     instruction = instruction.format(prompt_count=prompt_count)
@@ -61,8 +63,7 @@ def build_system_prompt(send_type: str, prompt_count: int) -> str:
 
 def build_user_prompt(topic: str) -> str:
     """构建用户提示词"""
-    template = PROMPTS_CONFIG.get("user_prompt_template", "主题：{topic}")
-    return template.format(topic=topic)
+    return f"主题：{topic}"
 
 
 def _merge_arrays(match: re.Match) -> str:
