@@ -9,6 +9,7 @@ from playwright.async_api import async_playwright
 import sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 from account_manager import (
+    PROJECT_ROOT,
     get_account_dir,
     get_account_browser_profile,
     get_account_config_path,
@@ -18,7 +19,6 @@ from account_manager import (
 )
 
 # ==================== 配置区 ====================
-PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 UPLOAD_URL = "https://creator.douyin.com/creator-micro/content/upload"
 TYPE_MAP = {
     "article": "文章",

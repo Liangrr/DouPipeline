@@ -33,6 +33,7 @@ from datetime import datetime
 
 # 导入账号管理模块
 from account_manager import (
+    PROJECT_ROOT,
     list_accounts,
     create_account,
     print_accounts,
@@ -42,9 +43,8 @@ from account_manager import (
     get_account_browser_profile,
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOGS_DIR = os.path.join(BASE_DIR, "logs")
-XIAOHONGSHU_JSON_PATH = os.path.join(BASE_DIR, "xiaohongshu.json")
+LOGS_DIR = os.path.join(PROJECT_ROOT, "logs")
+XIAOHONGSHU_JSON_PATH = os.path.join(PROJECT_ROOT, "xiaohongshu.json")
 
 
 def log_execution(step_num: int, step_name: str, success: bool, error_msg: str = "", platform: str = "", account: str = ""):
@@ -177,7 +177,7 @@ async def run_xiaohongshu_pipeline(args):
     if input_file:
         # 指定了 --input 则跳过生成，直接用指定文件
         if not os.path.isabs(input_file):
-            input_file = os.path.join(BASE_DIR, input_file)
+            input_file = os.path.join(PROJECT_ROOT, input_file)
         if not os.path.exists(input_file):
             print(f"❌ 文件不存在: {input_file}")
             sys.exit(1)

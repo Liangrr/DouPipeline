@@ -1,327 +1,719 @@
-# 社交媒体自动发布工具 / Social Media Auto Publisher
+# 🤖 社交媒体 AI 自动发布工具
 
-> 基于 LLM + 浏览器自动化，一键生成内容并发布到抖音、小红书。
+> **一句话介绍：** 运行一条命令，AI 自动帮你写文案、生成图片、发布到抖音/小红书。
 >
-> An AI-powered tool that generates content via LLM and auto-publishes to Douyin (TikTok China) and Xiaohongshu (RED) using browser automation.
+> 整个过程全自动：**AI 写文案 → AI 生图 → 浏览器自动操作发布**，你只需要喝杯咖啡等着就行 ☕
 
 ---
 
-## 目录 / Table of Contents
+## 📖 目录
 
-- [快速上手 / Quick Start](#快速上手--quick-start)
-- [支持平台 / Supported Platforms](#支持平台--supported-platforms)
-- [安装 / Installation](#安装--installation)
-- [使用教程 / Usage Tutorial](#使用教程--usage-tutorial)
-- [进阶用法 / Advanced Usage](#进阶用法--advanced-usage)
-- [项目结构 / Project Structure](#项目结构--project-structure)
-- [常见问题 / FAQ](#常见问题--faq)
+- [这个工具能干什么？](#-这个工具能干什么)
+- [运行效果预览](#-运行效果预览)
+- [环境准备（必看！）](#-环境准备必看)
+- [安装步骤（手把手教）](#-安装步骤手把手教)
+- [配置 API 密钥（必须！）](#-配置-api-密钥必须)
+- [第一次运行（含扫码登录）](#-第一次运行含扫码登录)
+- [日常使用命令大全](#-日常使用命令大全)
+- [多账号管理](#-多账号管理)
+- [项目文件说明](#-项目文件说明)
+- [常见问题 FAQ](#-常见问题-faq)
+- [工作原理（技术细节）](#-工作原理技术细节)
 
 ---
 
-## 快速上手 / Quick Start
+## 🎯 这个工具能干什么？
 
-只需要 3 步即可发布你的第一条内容 / Just 3 steps to publish your first post:
+### 抖音发布（3 步全自动）
 
-```bash
-# 1. 安装依赖 / Install dependencies
-uv sync && uv run playwright install chromium
-
-# 2. 发布到抖音（首次需扫码登录）/ Publish to Douyin (scan QR on first run)
-uv run python run.py --platform douyin
-
-# 3. 发布到小红书 / Publish to Xiaohongshu
-uv run python run.py --platform xiaohongshu
+```
+你输入一个主题（比如"旅行攻略"）
+    ↓
+Step 1: AI 自动生成标题、正文、图片描述（调用 LLM）
+    ↓
+Step 2: AI 自动生成配图（调用豆包 AI 画图）
+    ↓
+Step 3: 浏览器自动打开抖音创作者平台，自动填写、自动发布
+    ↓
+✅ 发布完成！
 ```
 
-就这么简单！工具会自动：AI 生成文案 → AI 生成图片 → 浏览器自动发布。
-That's it! The tool automatically: generates copy via AI → generates images via AI → publishes via browser.
+### 小红书发布（2 步全自动）
+
+```
+你输入一个主题（比如"宝妈育儿"）
+    ↓
+Step 1: AI 自动生成标题、正文、标签（调用 LLM）
+    ↓
+Step 2: 浏览器自动打开小红书创作者中心，自动填写、自动发布
+    ↓
+✅ 发布完成！
+```
 
 ---
 
-## 支持平台 / Supported Platforms
+## 🖼 运行效果预览
 
-| 平台 / Platform | 命令 / Command | 工作流 / Workflow |
-|------|------|------|
-| 抖音 / Douyin | `--platform douyin` | LLM 生成内容 → 豆包生图 → 抖音发布 |
-| 小红书 / Xiaohongshu | `--platform xiaohongshu` | LLM 生成文案 → 小红书发布 |
+运行后你会看到类似这样的输出：
+
+```
+============================================================
+🎬  抖音链路  [账号: legacy]
+============================================================
+
+🚀 Step 1: 内容生成 (generate)
+------------------------------------------------------------
+🤖 正在调用 mimo-v2.5 生成内容...
+   类型: image | 主题: 旅行攻略
+✅ Step 1 完成 -> accounts/legacy/doubao.json
+
+🚀 Step 2: 豆包图片生成 (doubao)
+------------------------------------------------------------
+🤖 豆包批量提问 & 保存图片  [账号: legacy]
+📋 共 8 条 prompt
+✅ 高清图已保存！
+
+🚀 Step 3: 抖音发布 (douyin.publisher)
+------------------------------------------------------------
+🎉 已登录！
+📝 步骤1：点击「发布图文」...
+✅ 发布完成！
+
+🎉 抖音链路执行完毕！
+```
 
 ---
 
-## 安装 / Installation
+## 🛠 环境准备（必看！）
 
-### 环境要求 / Prerequisites
+在安装之前，请确保你的电脑满足以下条件：
 
-- **Python >= 3.12**
-- **uv** 包管理器（[安装 uv](https://docs.astral.sh/uv/getting-started/installation/)）
+### 1. 操作系统
 
-### 安装步骤 / Setup
+- ✅ **macOS**（推荐）
+- ✅ **Windows**（需要 WSL 或原生支持）
+- ✅ **Linux**
+
+### 2. 安装 Python 3.12+
+
+打开终端（Mac 按 `Command + 空格`，输入 `Terminal`；Windows 打开 PowerShell），输入：
 
 ```bash
-# 克隆项目 / Clone the repo
-git clone <repo-url> && cd browser
+python3 --version
+```
 
-# 安装依赖 / Install dependencies
+如果显示 `Python 3.12.x` 或更高版本，就 OK 了 ✅
+
+**如果没有安装 Python 或版本太低：**
+
+- **Mac 用户：** 推荐用 Homebrew 安装：
+  ```bash
+  brew install python@3.12
+  ```
+- **Windows 用户：** 去 [python.org](https://www.python.org/downloads/) 下载安装包
+- **Linux 用户：**
+  ```bash
+  sudo apt install python3.12  # Ubuntu/Debian
+  sudo dnf install python3.12  # Fedora
+  ```
+
+### 3. 安装 uv（Python 包管理工具）
+
+**uv 是什么？** 它是一个超快的 Python 包管理工具，类似 pip 但快 10-100 倍。
+
+```bash
+# Mac / Linux 一行搞定
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows（PowerShell）
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+安装后验证：
+
+```bash
+uv --version
+```
+
+看到版本号就说明安装成功了 ✅
+
+> 💡 **如果你不想用 uv**，也可以用 pip：`pip install -r requirements.txt`，但推荐用 uv。
+
+### 4. 网络要求
+
+- 需要能访问 **豆包 AI**（doubao.com）—— 用于 AI 生成图片
+- 需要能访问 **抖音创作者平台**（creator.douyin.com）—— 用于发布
+- 需要能访问 **小红书创作者中心**（creator.xiaohongshu.com）—— 用于发布
+- 需要能访问 **LLM API**（默认是小米 MiMo 接口）—— 用于 AI 生成文案
+
+---
+
+## 📦 安装步骤（手把手教）
+
+### 第 1 步：下载项目
+
+打开终端，进入你想放项目的目录，然后克隆：
+
+```bash
+# 进入桌面（或其他你想放的位置）
+cd ~/Desktop
+
+# 克隆项目（把 <repo-url> 换成实际的仓库地址）
+git clone <repo-url> browser
+
+# 进入项目目录
+cd browser
+```
+
+> 💡 如果你已经有项目文件了，直接 `cd` 进去就行。
+
+### 第 2 步：安装 Python 依赖
+
+```bash
+# 使用国内镜像源加速下载（推荐国内用户）
 uv sync --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 安装 Playwright 浏览器 / Install Playwright browser
+# 如果你在国内且网络好，也可以直接：
+# uv sync
+```
+
+这个命令会自动安装所有需要的 Python 库，包括：
+- `openai` — 调用 AI 大模型
+- `playwright` — 浏览器自动化
+- `pillow` — 图片处理
+- `python-dotenv` — 读取配置文件
+
+### 第 3 步：安装浏览器
+
+```bash
 uv run playwright install chromium
 ```
 
----
+这会下载一个 Chromium 浏览器（约 150MB），用于自动化操作抖音和小红书网站。
 
-## 使用教程 / Usage Tutorial
+> ⚠️ **这一步很重要！** 如果不安装浏览器，后面运行会报错。
 
-### 第一次使用 / First Time Use
-
-> **重要：** 首次运行会弹出浏览器窗口，需要你**手动扫码登录**对应平台。登录状态会保存在本地，后续自动复用。
->
-> **Important:** The first run will open a browser window. You need to **scan the QR code** to log in. Login state is saved locally for future use.
+### 第 4 步：验证安装
 
 ```bash
-# 抖音首次登录 / First login for Douyin
-uv run python run.py --platform douyin --only 1   # 只运行第一步，触发登录 / Only run step 1 to trigger login
-```
-
-登录完成后，浏览器会关闭，之后再运行完整流程即可。
-After login, the browser closes. You can then run the full pipeline.
-
----
-
-### 发布到抖音 / Publish to Douyin
-
-抖音链路包含 **3 个步骤**，工具会自动依次执行：
-The Douyin pipeline has **3 steps**, executed automatically in sequence:
-
-```
-Step 1: AI 生成文案和图片描述
-Step 2: 豆包 AI 生成图片
-Step 3: 自动发布到抖音
-```
-
-#### 基础用法 / Basic Usage
-
-```bash
-# 使用默认主题"美女"发布图文 / Publish images with default topic
-uv run python run.py --platform douyin
-
-# 指定主题 / Specify a topic
-uv run python run.py --platform douyin --topic "旅行攻略"
-uv run python run.py --platform douyin --topic "Travel tips"
-
-# 指定图片数量 / Specify image count
-uv run python run.py --platform douyin --count 5
-```
-
-#### 内容类型 / Content Types
-
-```bash
-# 发布图文（默认）/ Publish images (default)
-uv run python run.py --platform douyin --type image
-
-# 发布文章 / Publish article
-uv run python run.py --platform douyin --type article --topic "AI面试题"
-
-# 发布泳装写真 / Publish swimwear photos
-uv run python run.py --platform douyin --type swimwear --count 6
-```
-
-| 类型 / Type | 参数 / Flag | 说明 / Description |
-|------|------|------|
-| 图文 / Image | `--type image` | 生成图片 → 发布图文相册 / Generate images → publish photo album |
-| 文章 / Article | `--type article` | 生成技术文章 → 发布长文 / Generate tech article → publish long-form |
-| 泳装 / Swimwear | `--type swimwear` | 生成泳装写真 → 发布图文 / Generate swimwear photos → publish |
-
-#### 分步控制 / Step Control
-
-如果某一步失败了，可以从失败的步骤重新开始，不用从头来：
-If a step fails, you can restart from that step without repeating everything:
-
-```bash
-# 只执行某一步 / Run only one step
-uv run python run.py --platform douyin --only 1    # 只生成内容 / Only generate
-uv run python run.py --platform douyin --only 2    # 只生成图片 / Only generate images
-uv run python run.py --platform douyin --only 3    # 只发布 / Only publish
-
-# 从某一步开始 / Start from a step
-uv run python run.py --platform douyin --step 2    # 跳过生成，从生图开始 / Skip to image gen
-uv run python run.py --platform douyin --step 3    # 跳到发布（用已有内容）/ Skip to publish
-```
-
----
-
-### 发布到小红书 / Publish to Xiaohongshu
-
-小红书链路包含 **2 个步骤**：
-The Xiaohongshu pipeline has **2 steps**:
-
-```
-Step 1: AI 生成文案
-Step 2: 自动发布到小红书
-```
-
-#### 基础用法 / Basic Usage
-
-```bash
-# 自动生成文案并发布 / Auto-generate and publish
-uv run python run.py --platform xiaohongshu
-
-# 指定主题 / Specify a topic
-uv run python run.py --platform xiaohongshu --topic "旅行攻略"
-uv run python run.py --platform xiaohongshu --topic "Skincare tips"
-```
-
-#### 使用已有内容 / Use Existing Content
-
-如果你已经写好了文案，可以直接用 JSON 文件发布，跳过 AI 生成：
-If you already have content, publish directly from a JSON file:
-
-```bash
-uv run python run.py --platform xiaohongshu --input my_note.json
-```
-
-JSON 文件格式 / JSON format:
-```json
-{
-  "title": "笔记标题（10-20字，含emoji）",
-  "content": "正文内容（200-500字，口语化）",
-  "tags": ["标签1", "标签2", "标签3"],
-  "sendType": "xiaohongshu"
-}
-```
-
-#### 分步控制 / Step Control
-
-```bash
-uv run python run.py --platform xiaohongshu --only 1    # 只生成文案 / Only generate
-uv run python run.py --platform xiaohongshu --only 2    # 只发布 / Only publish
-```
-
----
-
-### 多账号管理 / Multi-Account Management
-
-支持多个账号独立运行，每个账号有独立的登录状态和配置：
-Supports multiple isolated accounts, each with its own login state and config:
-
-```bash
-# 创建新账号 / Create a new account
-uv run python run.py --platform douyin --account create my_account
-
-# 列出所有账号 / List all accounts
-uv run python run.py --platform douyin --account list
-
-# 使用指定账号发布 / Publish with a specific account
-uv run python run.py --platform douyin --account my_account
-
-# 不指定账号时，默认使用 legacy 账号 / Defaults to "legacy" if not specified
-uv run python run.py --platform douyin
-```
-
----
-
-## 进阶用法 / Advanced Usage
-
-### 单独运行各模块 / Run Modules Independently
-
-每个模块都可以脱离 `run.py` 独立使用：
-Each module can be used independently without `run.py`:
-
-```bash
-# 只调用 LLM 生成内容 / Generate content with LLM only
-uv run python generate.py "旅行攻略" --type image --count 5 --output doubao.json
-
-# 只运行豆包生图 / Run Doubao image generation only
-uv run python doubao.py --account my_account
-
-# 只运行抖音发布 / Run Douyin publishing only
-uv run python -m douyin.publisher --type article --account my_account
-
-# 只运行小红书发布 / Run Xiaohongshu publishing only
-uv run python -m xiaohongshu.publisher --input my_note.json
-```
-
-### 查看所有参数 / View All Options
-
-```bash
+# 检查是否能正常运行
 uv run python run.py --help
 ```
 
-### 查看日志 / View Logs
+如果看到帮助信息，说明安装成功 ✅
 
-每次执行会自动记录日志到 `logs/YYYY-MM-DD.jsonl`：
-Execution logs are saved to `logs/YYYY-MM-DD.jsonl`:
+---
+
+## 🔑 配置 API 密钥（必须！）
+
+这个工具需要调用 AI 大模型来生成内容，所以你需要配置一个 API 密钥。
+
+### 第 1 步：创建 .env 文件
+
+项目根目录下有一个 `.env.example` 文件，复制一份：
 
 ```bash
-# 查看今天的日志 / View today's logs
-cat logs/$(date +%Y-%m-%d).jsonl
+cp .env.example .env
+```
+
+### 第 2 步：编辑 .env 文件
+
+用任意文本编辑器打开 `.env` 文件：
+
+```bash
+# Mac
+open -e .env
+
+# Windows
+notepad .env
+
+# Linux
+nano .env
+```
+
+把里面的内容改成你自己的：
+
+```env
+# LLM API 配置
+MIMO_API_KEY=你的API密钥粘贴到这里
+MIMO_BASE_URL=https://token-plan-cn.xiaomimimo.com/v1
+MIMO_MODEL=mimo-v2.5
+```
+
+### 各字段说明
+
+| 字段 | 说明 | 默认值 |
+|------|------|--------|
+| `MIMO_API_KEY` | **你的 API 密钥**（必填！） | 无，必须填写 |
+| `MIMO_BASE_URL` | API 接口地址 | `https://token-plan-cn.xiaomimimo.com/v1` |
+| `MIMO_MODEL` | 使用的模型名称 | `mimo-v2.5` |
+
+> ⚠️ **重要：** `.env` 文件包含你的密钥，**不要分享给别人**，也**不要提交到 git**（已在 .gitignore 中排除）。
+
+> 💡 **默认使用小米 MiMo 模型。** 如果你想用其他兼容 OpenAI 接口的模型（如 DeepSeek、通义千问等），修改 `MIMO_BASE_URL` 和 `MIMO_MODEL` 即可。
+
+---
+
+## 🚀 第一次运行（含扫码登录）
+
+### 重要提示
+
+> **首次运行会弹出浏览器窗口，需要你手动扫码登录！**
+>
+> 这是正常的 —— 工具需要登录你的抖音/小红书账号才能发布内容。登录一次后，登录状态会保存在本地，以后就不用再登了。
+
+### 第一次发布到抖音
+
+```bash
+# 只运行第一步（触发登录，不实际发布）
+uv run python run.py --platform douyin --only 1
+```
+
+运行后会：
+1. 弹出一个浏览器窗口
+2. 自动打开抖音创作者平台
+3. **等你扫码登录** —— 用手机抖音 APP 扫描浏览器上的二维码
+4. 登录成功后，回到终端按回车继续
+
+登录成功后，浏览器会关闭。**以后再运行就不需要扫码了**（除非登录过期）。
+
+### 第一次发布到小红书
+
+```bash
+# 只运行第一步（触发登录，不实际发布）
+uv run python run.py --platform xiaohongshu --only 1
+```
+
+同样会弹出浏览器，用手机小红书 APP 扫码登录。
+
+### 登录完成后，正式发布
+
+```bash
+# 发布到抖音
+uv run python run.py --platform douyin
+
+# 发布到小红书
+uv run python run.py --platform xiaohongshu
+```
+
+就这么简单！🎉
+
+---
+
+## 📋 日常使用命令大全
+
+### 抖音发布
+
+```bash
+# ========== 基础用法 ==========
+
+# 使用默认主题"美女"发布图文（默认 8 张图）
+uv run python run.py --platform douyin
+
+# 指定主题
+uv run python run.py --platform douyin --topic "旅行攻略"
+uv run python run.py --platform douyin --topic "美食推荐"
+uv run python run.py --platform douyin --topic "AI面试题"
+
+# ========== 内容类型 ==========
+
+# 发布图文相册（默认类型）
+uv run python run.py --platform douyin --type image
+
+# 发布文章（长文 + 封面图）
+uv run python run.py --platform douyin --type article --topic "AI Agent面试"
+
+# 发布泳装写真
+uv run python run.py --platform douyin --type swimwear --count 6
+
+# ========== 控制图片数量 ==========
+
+# 生成 5 张图
+uv run python run.py --platform douyin --count 5
+
+# ========== 分步执行（调试用）==========
+
+# 只执行第 1 步：AI 生成内容（不生图不发布）
+uv run python run.py --platform douyin --only 1
+
+# 只执行第 2 步：豆包生成图片（需要先执行过第 1 步）
+uv run python run.py --platform douyin --only 2
+
+# 只执行第 3 步：发布到抖音（需要先执行过第 1、2 步）
+uv run python run.py --platform douyin --only 3
+
+# 从第 2 步开始（跳过第 1 步，用已有的内容）
+uv run python run.py --platform douyin --step 2
+
+# 从第 3 步开始（跳过前两步，用已有的图片和内容）
+uv run python run.py --platform douyin --step 3
+```
+
+### 小红书发布
+
+```bash
+# ========== 基础用法 ==========
+
+# 使用默认主题"宝妈育儿"自动生成文案并发布
+uv run python run.py --platform xiaohongshu
+
+# 指定主题
+uv run python run.py --platform xiaohongshu --topic "护肤心得"
+uv run python run.py --platform xiaohongshu --topic "减肥食谱"
+
+# ========== 使用已有的文案 ==========
+
+# 用自己写好的 JSON 文件发布（跳过 AI 生成）
+uv run python run.py --platform xiaohongshu --input my_note.json
+
+# ========== 分步执行 ==========
+
+# 只生成文案（不发布）
+uv run python run.py --platform xiaohongshu --only 1
+
+# 只发布（用已有的文案）
+uv run python run.py --platform xiaohongshu --only 2
+```
+
+### 查看帮助
+
+```bash
+# 查看所有可用参数
+uv run python run.py --help
+```
+
+### 参数速查表
+
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `--platform` / `-p` | 选择平台（必填） | `--platform douyin` |
+| `--topic` | 内容主题 | `--topic "旅行攻略"` |
+| `--type` | 内容类型（仅抖音） | `--type article` |
+| `--count` | 图片数量（仅抖音） | `--count 5` |
+| `--input` / `-i` | 已有 JSON 文件（仅小红书） | `--input note.json` |
+| `--only` | 只执行第 N 步 | `--only 1` |
+| `--step` | 从第 N 步开始 | `--step 2` |
+| `--account` | 指定账号 | `--account my_acc` |
+
+### 内容类型说明（仅抖音）
+
+| 类型 | 参数 | 说明 |
+|------|------|------|
+| 图文 | `--type image` | AI 生成多张图片，发布为图文相册（默认） |
+| 文章 | `--type article` | AI 生成长文 + 1 张封面图，发布为文章 |
+| 泳装 | `--type swimwear` | AI 生成泳装写真图片，发布为图文相册 |
+
+---
+
+## 👥 多账号管理
+
+如果你想管理多个抖音/小红书账号（比如一个号发美食，一个号发旅行），可以用多账号功能。
+
+### 创建新账号
+
+```bash
+# 创建一个叫 "food" 的账号
+uv run python run.py --platform douyin --account create food
+
+# 创建一个叫 "travel" 的账号
+uv run python run.py --platform douyin --account create travel
+```
+
+### 查看所有账号
+
+```bash
+uv run python run.py --platform douyin --account list
+```
+
+输出示例：
+
+```
+📋 当前共有 3 个账号:
+
+   • legacy  [✅ 已登录]
+     路径: /xxx/browser/accounts/legacy
+   • food  [❌ 未登录]
+     路径: /xxx/browser/accounts/food
+   • travel  [❌ 未登录]
+     路径: /xxx/browser/accounts/travel
+```
+
+### 使用指定账号发布
+
+```bash
+# 用 "food" 账号发布
+uv run python run.py --platform douyin --account food --topic "美食推荐"
+
+# 用 "travel" 账号发布
+uv run python run.py --platform douyin --account travel --topic "旅行攻略"
+
+# 不指定账号时，默认使用 "legacy" 账号
+uv run python run.py --platform douyin
+```
+
+### 账号数据隔离
+
+每个账号的数据完全独立，互不影响：
+
+```
+accounts/
+├── legacy/                 # 默认账号
+│   ├── browser_profile/    # 浏览器登录状态
+│   ├── doubao.json         # AI 生成的内容配置
+│   └── doubao_output/      # AI 生成的图片
+├── food/                   # 美食账号
+│   ├── browser_profile/
+│   ├── doubao.json
+│   └── doubao_output/
+└── travel/                 # 旅行账号
+    ├── browser_profile/
+    ├── doubao.json
+    └── doubao_output/
 ```
 
 ---
 
-## 项目结构 / Project Structure
+## 📁 项目文件说明
 
 ```
 browser/
-├── run.py                        # 统一入口 / Unified entry point
-├── generate.py                   # LLM 内容生成 / LLM content generation
-├── doubao.py                     # 豆包 AI 生图 / Doubao AI image generation
-├── account_manager.py            # 多账号管理 / Multi-account management
-├── douyin/                       # 抖音模块 / Douyin module
-│   └── publisher.py              # 抖音发布 / Douyin publisher
-├── xiaohongshu/                  # 小红书模块 / Xiaohongshu module
-│   └── publisher.py              # 小红书发布 / Xiaohongshu publisher
-├── accounts/                     # 账号数据 / Account data
-│   ├── legacy/                   # 默认账号 / Default account
-│   └── <账号名>/                 # 其他账号 / Other accounts
-├── logs/                         # 执行日志 / Execution logs
-└── pyproject.toml                # 项目配置 / Project config
+├── run.py                  # 🚀 主入口脚本（你平时就运行这个）
+├── generate.py             # 🤖 AI 内容生成模块（调用 LLM 生成文案和图片描述）
+├── doubao.py               # 🎨 豆包 AI 生图模块（自动操作豆包网站生成图片）
+├── account_manager.py      # 👤 账号管理模块（管理多个账号的目录和配置）
+├── prompts.json            # 📝 AI 提示词配置（定义了 AI 的角色和生成规则）
+│
+├── douyin/                 # 📱 抖音发布模块
+│   ├── __init__.py
+│   └── publisher.py        #    抖音自动发布（操作浏览器完成发布）
+│
+├── xiaohongshu/            # 📕 小红书发布模块
+│   ├── __init__.py
+│   └── publisher.py        #    小红书自动发布（操作浏览器完成发布）
+│
+├── accounts/               # 💾 账号数据目录（每个账号独立）
+│   ├── legacy/             #    默认账号
+│   │   ├── browser_profile/ #      浏览器登录状态
+│   │   ├── doubao.json     #      AI 生成的内容
+│   │   └── doubao_output/  #      AI 生成的图片
+│   └── <其他账号>/         #    其他账号（结构同上）
+│
+├── logs/                   # 📊 运行日志（按日期记录）
+│
+├── .env                    # 🔑 API 密钥配置（不要分享！）
+├── .env.example            #    配置文件模板
+├── pyproject.toml          # 📦 项目依赖配置
+├── uv.lock                 #    依赖版本锁定文件
+└── .gitignore              #    Git 忽略规则
+```
+
+### 各文件的作用
+
+| 文件 | 作用 | 你需要修改吗？ |
+|------|------|--------------|
+| `run.py` | 主入口，统一调度所有功能 | ❌ 不需要 |
+| `generate.py` | 调用 LLM 生成文案 | ❌ 不需要 |
+| `doubao.py` | 调用豆包 AI 生成图片 | ❌ 不需要 |
+| `doubayin/publisher.py` | 自动发布到抖音 | ❌ 不需要 |
+| `xiaohongshu/publisher.py` | 自动发布到小红书 | ❌ 不需要 |
+| `account_manager.py` | 管理多账号 | ❌ 不需要 |
+| `prompts.json` | AI 的角色和提示词 | 🔧 可选：想自定义 AI 风格时修改 |
+| `.env` | API 密钥 | ✅ **必须配置！** |
+| `accounts/` | 账号数据 | ❌ 自动生成，不要手动改 |
+
+---
+
+## ❓ 常见问题 FAQ
+
+### 安装相关
+
+#### Q: `uv sync` 报错怎么办？
+
+**A:** 试试以下方法：
+```bash
+# 1. 确认 uv 已安装
+uv --version
+
+# 2. 如果没有 uv，先安装
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 3. 用国内镜像重试
+uv sync --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+#### Q: `playwright install chromium` 报错？
+
+**A:** 试试：
+```bash
+# 确保 uv 已正确安装 playwright
+uv run playwright install chromium
+
+# 如果还是失败，尝试手动安装
+uv pip install playwright
+uv run playwright install chromium
+```
+
+#### Q: 运行时报 `ModuleNotFoundError`？
+
+**A:** 确保你用的是 `uv run python` 而不是直接 `python`：
+```bash
+# ❌ 错误
+python run.py --platform douyin
+
+# ✅ 正确
+uv run python run.py --platform douyin
+```
+
+### 登录相关
+
+#### Q: 浏览器弹出来了，但什么都没发生？
+
+**A:** 这是在等你扫码登录！
+1. 用手机打开对应的 APP（抖音/小红书）
+2. 扫描浏览器上的二维码
+3. 登录成功后，回到终端按回车继续
+
+#### Q: 登录状态过期了怎么办？
+
+**A:** 删除对应账号的浏览器缓存，重新登录：
+```bash
+# 删除 legacy 账号的登录状态
+rm -rf accounts/legacy/browser_profile/
+
+# 重新运行，会触发重新登录
+uv run python run.py --platform douyin --only 1
+```
+
+#### Q: 多个账号之间会互相影响吗？
+
+**A:** 不会！每个账号有完全独立的浏览器 profile、配置文件和图片目录，完全隔离。
+
+### 运行相关
+
+#### Q: 豆包生图时报错"拒绝生成"？
+
+**A:** 工具会自动检测拒绝并重试（最多 2 次）。如果仍然失败：
+- 可能是主题包含敏感词
+- 工具会自动清洗敏感词后重试
+- 尝试换个主题
+
+#### Q: LLM 生成的 JSON 格式有问题？
+
+**A:** 工具内置了 `fix_json()` 自动修复常见格式问题（单引号、尾逗号、未闭合字符串等），一般不需要担心。
+
+#### Q: 某一步失败了，怎么从那一步重新开始？
+
+**A:** 用 `--only` 或 `--step` 参数：
+```bash
+# 比如第 2 步失败了，只重新执行第 2 步
+uv run python run.py --platform douyin --only 2
+
+# 或者从第 2 步开始
+uv run python run.py --platform douyin --step 2
+```
+
+#### Q: 怎么查看运行日志？
+
+**A:** 日志保存在 `logs/` 目录下，按日期分文件：
+```bash
+# 查看今天的日志
+cat logs/$(date +%Y-%m-%d).jsonl
+```
+
+#### Q: 我想自定义 AI 的写作风格怎么办？
+
+**A:** 编辑 `prompts.json` 文件。里面定义了 AI 的角色设定（`roles`）和生成指令（`system_prompts`），你可以根据需要修改。
+
+---
+
+## 🔧 工作原理（技术细节）
+
+> 💡 这部分是给想了解技术细节的同学看的，普通用户可以跳过。
+
+### 整体架构
+
+```
+用户输入主题
+    ↓
+┌─────────────────────────────────────────┐
+│  run.py（统一入口）                       │
+│  解析命令行参数，调度对应链路              │
+└───────────┬─────────────────────────────┘
+            ↓
+┌─────────────────────────────────────────┐
+│  generate.py（LLM 内容生成）              │
+│  调用 MiMo 大模型，生成：                 │
+│  - 标题、副标题、正文                     │
+│  - 图片描述提示词（prompt）               │
+│  输出: doubao.json                        │
+└───────────┬─────────────────────────────┘
+            ↓
+┌─────────────────────────────────────────┐
+│  doubao.py（豆包 AI 生图）               │
+│  自动操作豆包网站：                       │
+│  - 逐条输入 prompt                        │
+│  - 等待图片生成                           │
+│  - 下载高清图片（自动去水印）              │
+│  输出: doubao_output/*.jpg                │
+└───────────┬─────────────────────────────┘
+            ↓
+┌─────────────────────────────────────────┐
+│  douyin/publisher.py 或                   │
+│  xiaohongshu/publisher.py                 │
+│  自动操作浏览器：                          │
+│  - 打开创作者平台                          │
+│  - 上传图片/填写内容                       │
+│  - 点击发布                               │
+└─────────────────────────────────────────┘
+```
+
+### 技术栈
+
+- **Python 3.12+** — 主语言
+- **OpenAI SDK** — 调用 LLM API（兼容 OpenAI 接口的任何模型）
+- **Playwright** — 浏览器自动化（控制 Chromium 浏览器）
+- **Pillow** — 图片处理（裁切水印等）
+- **python-dotenv** — 环境变量管理
+
+### 数据流
+
+```
+prompts.json（提示词模板）
+    + 用户输入的主题
+    ↓
+generate.py → doubao.json（AI 生成的文案 + 图片描述）
+    ↓
+doubao.py → doubao_output/（AI 生成的图片）
+    ↓
+publisher.py → 自动发布到平台
 ```
 
 ---
 
-## 常见问题 / FAQ
+## 📌 注意事项
 
-### Q: 首次运行浏览器弹出来但什么都没发生？
-### Q: Browser opens on first run but nothing happens?
-
-**A:** 这是在等你扫码登录。用手机打开对应平台 App，扫描浏览器中的二维码即可。
-**A:** It's waiting for you to scan the QR code. Open the corresponding platform app on your phone and scan the code in the browser.
-
-### Q: 豆包生图时报错"拒绝生成"？
-### Q: Doubao reports "refused to generate"?
-
-**A:** 工具会自动检测拒绝并重试（最多 2 次）。如果仍然失败，可能是 prompt 中包含敏感词，工具会自动清洗后重试。
-**A:** The tool auto-detects refusals and retries (up to 2 times). If it still fails, the prompt may contain sensitive words — the tool will auto-clean and retry.
-
-### Q: 多个账号之间会互相影响吗？
-### Q: Will multiple accounts affect each other?
-
-**A:** 不会。每个账号有独立的浏览器 profile、配置文件和图片目录，完全隔离。
-**A:** No. Each account has its own browser profile, config, and image directory — completely isolated.
-
-### Q: 登录状态过期了怎么办？
-### Q: What if my login session expires?
-
-**A:** 删除对应账号目录下的 `browser_profile/` 文件夹，重新运行即可触发重新登录。
-**A:** Delete the `browser_profile/` folder under the account directory, then run again to trigger re-login.
-
-### Q: 支持哪些平台？
-### Q: Which platforms are supported?
-
-**A:** 目前支持抖音和小红书。
-**A:** Currently Douyin and Xiaohongshu.
-
-### Q: LLM 生成的 JSON 格式有问题？
-### Q: LLM-generated JSON has format issues?
-
-**A:** 工具内置了 `fix_json()` 自动修复常见格式问题（单引号、尾逗号、未闭合字符串等）。
-**A:** The tool has a built-in `fix_json()` that auto-repairs common format issues (single quotes, trailing commas, unclosed strings, etc.).
+1. **首次运行必须扫码登录** — 登录状态会保存在本地，后续自动复用
+2. **豆包生图有 3 秒延迟** — 这是防触发人机校验，属于正常行为
+3. **抖音发布自动标注「内容由 AI 生成」** — 符合平台规定
+4. **图片 prompt 自动清洗敏感词汇** — 避免被豆包拒绝生成
+5. **`.env` 文件不要分享** — 包含你的 API 密钥
+6. **`accounts/` 目录不要删除** — 包含登录状态和生成的内容
 
 ---
 
-## 注意事项 / Notes
+## 🆘 获取帮助
 
-- 首次运行需扫码登录，登录状态自动保存 / Scan QR on first run; login state is saved automatically
-- 豆包生图有 3 秒防抖延迟 / Doubao image gen has a 3-second anti-bot delay
-- 抖音发布自动标注「内容由 AI 生成」/ Douyin auto-adds "AI-generated content" declaration
-- 图片 prompt 自动清洗敏感词汇 / Image prompts are auto-cleaned of sensitive words
+如果遇到问题：
+
+1. 先看上面的 [常见问题 FAQ](#-常见问题-faq)
+2. 运行 `uv run python run.py --help` 查看所有参数
+3. 查看 `logs/` 目录下的运行日志定位问题
+4. 删除 `accounts/<账号名>/browser_profile/` 重新登录
+
+---
+
+> 🎉 **恭喜你看到这里！** 现在你已经知道怎么使用这个工具了。快去试试吧：
+>
+> ```bash
+> uv run python run.py --platform douyin --topic "今天天气真好"
+> ```

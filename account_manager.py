@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 # ==================== 配置区 ====================
-PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__)))
+PROJECT_ROOT = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 ACCOUNTS_ROOT = os.path.join(PROJECT_ROOT, "accounts")
 LEGACY_ACCOUNT_NAME = "legacy"
 

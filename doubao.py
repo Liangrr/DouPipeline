@@ -15,19 +15,19 @@ from PIL import Image
 from playwright.async_api import async_playwright, Page, BrowserContext
 
 # 导入账号管理模块
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from account_manager import (
+    PROJECT_ROOT,
     get_account_config_path,
     get_account_output_dir,
 )
 
 # ====== 配置 ======
 DOUBAO_URL = "https://www.doubao.com/chat"
-USER_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubao_browser_profile")
+USER_DATA_DIR = os.path.join(PROJECT_ROOT, "doubao_browser_profile")
 TIMEOUT_IMAGE = 180
 MAX_RETRY = 2  # 被拒绝时最多重试次数
 MIN_IMAGES_REQUIRED = 1  # 最少需要生成的图片数量
-DEFAULT_IMAGE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "default_cover.jpg")
+DEFAULT_IMAGE_PATH = os.path.join(PROJECT_ROOT, "default_cover.jpg")
 REFUSAL_KEYWORDS = [
     "抱歉", "无法生成", "不能生成", "没办法生成", "生成不了",
     "我无法", "我不能", "不可以", "不符合", "违反",

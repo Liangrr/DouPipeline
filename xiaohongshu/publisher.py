@@ -8,12 +8,12 @@ from playwright.async_api import async_playwright
 # 导入账号管理模块
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 from account_manager import (
+    PROJECT_ROOT,
     get_account_browser_profile,
     ensure_account_exists,
 )
 
 # ==================== 配置区 ====================
-PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 
 
 def read_json_file(file_path: str) -> dict:

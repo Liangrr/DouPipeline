@@ -4,11 +4,12 @@ import re
 import sys
 import os
 from openai import AsyncOpenAI
+from account_manager import PROJECT_ROOT
 
 # 加载 .env 文件
 try:
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 except ImportError:
     pass  # python-dotenv 未安装时忽略，依赖系统环境变量
 
@@ -25,8 +26,6 @@ if not API_KEY:
 DEFAULT_SEND_TYPE = "image"
 DEFAULT_PROMPT_COUNT = 9
 
-# 项目根目录
-PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__)))
 DEFAULT_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "doubao.json")
 
 
