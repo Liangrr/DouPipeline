@@ -77,30 +77,12 @@ async def ensure_logged_in(context):
 
 async def publish_note(page, title: str, content: str, tags: list = None):
     """执行发布笔记的完整流程"""
-    # 步骤1：点击"发布笔记"
-    print("📝 步骤1：进入发布页面...")
-    await page.click('text=发布笔记')
-    await page.wait_for_load_state("networkidle")
-    await page.wait_for_timeout(1000)
-
-    # 步骤2：点击"写长文"
-    print("📝 步骤2：点击写长文...")
-    write_btn = page.get_by_text("写长文", exact=True)
-    if await write_btn.is_visible(timeout=5000):
-        await write_btn.click()
-    else:
-        # 兜底：按 tab 序号定位
-        await page.locator('.header-tabs .creator-tab').nth(6).click()
-    print("  ✅ 点击成功")
-    await page.wait_for_load_state("networkidle")
-    await page.wait_for_timeout(1000)
-
-    # 步骤3：如果有"新的创作"或"开始创作"按钮，点击它
-    for btn_text in ["新的创作", "开始创作"]:
+    # 步骤1：点击"新创作"
+    for btn_text in ["新创作", "新的创作", "开始创作"]:
         try:
             btn = page.get_by_text(btn_text, exact=True)
             if await btn.is_visible(timeout=3000):
-                print(f"📝 步骤3：点击'{btn_text}'...")
+                print(f"📝 步骤1：点击'{btn_text}'...")
                 await btn.click()
                 await page.wait_for_load_state("networkidle")
                 await page.wait_for_timeout(1000)
@@ -108,8 +90,8 @@ async def publish_note(page, title: str, content: str, tags: list = None):
         except Exception:
             pass
 
-    # 步骤4：输入标题
-    print(f"📝 步骤4：输入标题: {title}")
+    # 步骤2：输入标题
+    print(f"📝 步骤2：输入标题: {title}")
     title_input = page.locator('textarea[placeholder*="标题"]').first
     if not await title_input.is_visible(timeout=3000):
         title_input = page.locator('[contenteditable="true"]').first
@@ -117,8 +99,8 @@ async def publish_note(page, title: str, content: str, tags: list = None):
     await title_input.fill("")
     await title_input.fill(title)
 
-    # 步骤5：输入正文
-    print("📝 步骤5：输入正文...")
+    # 步骤3：输入正文
+    print("📝 步骤3：输入正文...")
     editor = page.locator('[contenteditable="true"]').last
     await editor.click()
     await page.keyboard.press("Control+a")
@@ -126,8 +108,8 @@ async def publish_note(page, title: str, content: str, tags: list = None):
     await page.keyboard.insert_text(content)
     await page.wait_for_timeout(500)
 
-    # 步骤6：一键排版
-    print("📝 步骤6：一键排版...")
+    # 步骤4：一键排版
+    print("📝 步骤4：一键排版...")
     try:
         format_btn = page.get_by_text("一键排版")
         if await format_btn.is_visible(timeout=3000):
@@ -137,16 +119,16 @@ async def publish_note(page, title: str, content: str, tags: list = None):
     except Exception:
         print("  ⚠️ 未找到一键排版按钮，跳过")
 
-    # 步骤7：下一步
-    print("📝 步骤7：点击下一步...")
+    # 步骤5：下一步
+    print("📝 步骤5：点击下一步...")
     next_btn = page.get_by_text("下一步")
     await next_btn.click()
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(1000)
 
-    # 步骤8：输入标签
+    # 步骤6：输入标签
     if tags:
-        print(f"📝 步骤8：输入标签 ({len(tags)} 个)...")
+        print(f"📝 步骤6：输入标签 ({len(tags)} 个)...")
         for tag in tags:
             try:
                 # 小红书发布页的话题/标签输入框
@@ -165,10 +147,10 @@ async def publish_note(page, title: str, content: str, tags: list = None):
             except Exception as e:
                 print(f"  ⚠️ 添加标签 '{tag}' 失败: {e}")
     else:
-        print("📝 步骤8：无标签，跳过")
+        print("📝 步骤6：无标签，跳过")
 
-    # 步骤9：等待图片上传完成
-    print("📝 步骤9：等待图片上传完成...")
+    # 步骤7：等待图片上传完成
+    print("📝 步骤7：等待图片上传完成...")
     max_wait = 120  # 最长等待 120 秒
     start_time = asyncio.get_event_loop().time()
     while True:
@@ -204,8 +186,8 @@ async def publish_note(page, title: str, content: str, tags: list = None):
 
     await page.wait_for_timeout(1000)
 
-    # 步骤10：点击发布
-    print("📝 步骤10：点击发布...")
+    # 步骤8：点击发布
+    print("📝 步骤8：点击发布...")
     await page.wait_for_timeout(2000)
     # 尝试多种选择器定位发布按钮（按优先级排列，避开侧边栏的「发布笔记」）
     published = False
@@ -318,7 +300,7 @@ async def publish(file_path: str, account_name: str = "legacy"):
 
         # 5. 打开新页面执行发布
         page = await context.new_page()
-        await page.goto("https://creator.xiaohongshu.com/new/home", wait_until="networkidle", timeout=30000)
+        await page.goto("https://creator.xiaohongshu.com/publish/publish?from=menu&target=article", wait_until="networkidle", timeout=30000)
         await page.wait_for_timeout(2000)
 
         # 6. 执行发布
