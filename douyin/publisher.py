@@ -363,23 +363,37 @@ async def publish_image_post(page, title: str, subtitle: str, summary: str, cont
     # 步骤2：点击"上传图文"，上传所有图片
     print("📝 步骤2：点击「上传图文」并上传图片...")
     try:
+        # 定位"上传图文"按钮
         btn = page.get_by_text("上传图文")
+        # 等待按钮出现在页面上，最多等 10 秒
         await btn.wait_for(state="visible", timeout=10000)
+        # expect_file_chooser 是 Playwright 的文件选择器监听器：
+        # 进入 async with 块后，Playwright 开始监听页面上的 <input type="file"> 弹出
+        # 点击按钮后触发文件选择对话框，Playwright 自动拦截并返回 file_chooser 对象
         async with page.expect_file_chooser(timeout=10000) as fc_info:
+            # 点击按钮，触发文件选择对话框
             await btn.click()
+        # 获取被拦截的 file_chooser 对象
         file_chooser = await fc_info.value
+        # set_files 将本地图片路径列表注入到 file input，模拟用户选择文件
+        # images 是一个路径列表，如 ['/path/1.jpg', '/path/2.jpg']
         await file_chooser.set_files(images)
         print(f"  ✅ 已上传 {len(images)} 张图片")
     except Exception as e:
+        # 主按钮失败，尝试备用方案
         print(f"  ⚠️ 上传图文按钮点击失败: {e}")
         try:
+            # 备用：定位"点击上传"区域
             upload_area = page.get_by_text("点击上传")
+            # 同样的文件选择器拦截机制
             async with page.expect_file_chooser(timeout=5000) as fc_info:
                 await upload_area.click()
+            # 获取 file_chooser 并注入图片文件
             file_chooser = await fc_info.value
             await file_chooser.set_files(images)
             print(f"  ✅ 通过「点击上传」上传了 {len(images)} 张图片")
         except Exception as e2:
+            # 两种方式都失败，记录错误
             print(f"  ❌ 图片上传失败: {e2}")
 
     # 等待上传完成和页面加载"编辑图文"区域
