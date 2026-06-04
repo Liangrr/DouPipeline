@@ -41,6 +41,16 @@ def get_account_backup_dir(account_name: str) -> str:
     return os.path.join(get_account_dir(account_name), "backups")
 
 
+def get_account_novels_dir(account_name: str) -> str:
+    """获取账号的小说数据目录"""
+    return os.path.join(get_account_dir(account_name), "novels")
+
+
+def get_book_dir(account_name: str, book_name: str) -> str:
+    """获取指定小说的目录路径"""
+    return os.path.join(get_account_novels_dir(account_name), book_name)
+
+
 def list_accounts() -> list:
     """列出所有已创建的账号"""
     if not os.path.exists(ACCOUNTS_ROOT):

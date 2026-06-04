@@ -18,6 +18,13 @@
     python run.py --platform xiaohongshu --only 1           # 只生成文案
     python run.py --platform xiaohongshu --only 2           # 只发布
 
+番茄小说链路 (fanqie):
+    python run.py --platform fanqie --topic "都市重生"       # 完整流程：架构→章节→发布
+    python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --chapters 10
+    python run.py --platform fanqie --topic "都市重生" --only 1   # 只生成架构
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 2  # 只生成章节
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 3  # 只发布
+
 多账号管理:
     python run.py --platform douyin --account list          # 列出所有账号
     python run.py --platform douyin --account create my_acc # 创建新账号
@@ -227,6 +234,101 @@ async def run_xiaohongshu_pipeline(args):
     print("\n🎉 小红书链路执行完毕！")
 
 
+# ==================== 番茄小说链路 ====================
+
+async def run_fanqie_pipeline(args):
+    """番茄小说链路: architecture → chapters → publish"""
+    args.topic = args.topic or "都市重生"
+    account_name = getattr(args, 'account', 'legacy') or 'legacy'
+
+    print("=" * 60)
+    print(f"📚  番茄小说链路  [账号: {account_name}]")
+    print("=" * 60)
+
+    start_step = args.step or 1
+    only_step = args.only
+    genre = getattr(args, 'genre', '') or ''
+    gender = getattr(args, 'gender', 'male') or 'male'
+    chapter_count = getattr(args, 'chapters', 10) or 10
+    book_dir = getattr(args, 'book_dir', None)
+
+    # 确定小说输出目录
+    if book_dir:
+        if not os.path.isabs(book_dir):
+            book_dir = os.path.join(PROJECT_ROOT, book_dir)
+    else:
+        from account_manager import get_account_novels_dir
+        novels_dir = get_account_novels_dir(account_name)
+        dir_name = args.topic.replace(" ", "_")[:20]
+        book_dir = os.path.join(novels_dir, dir_name)
+
+    # --- Step 1: 生成小说架构 ---
+    if (start_step <= 1) and (only_step is None or only_step == 1):
+        print("\n🚀 Step 1: 生成小说架构 (novel_generator)")
+        print("-" * 60)
+        try:
+            from novel_generator import generate_architecture
+            architecture = await generate_architecture(
+                topic=args.topic,
+                genre=genre,
+                gender=gender,
+                chapter_count=chapter_count,
+                output_dir=book_dir,
+            )
+            print(f"✅ Step 1 完成 -> {book_dir}")
+            log_execution(1, "generate_architecture", success=True, platform="fanqie", account=account_name)
+        except Exception as e:
+            print(f"❌ Step 1 失败: {e}")
+            log_execution(1, "generate_architecture", success=False, error_msg=str(e), platform="fanqie", account=account_name)
+            sys.exit(1)
+        if only_step == 1:
+            return
+    else:
+        print("\n⏭️  Step 1: 跳过")
+
+    # --- Step 2: 生成章节内容 ---
+    if (start_step <= 2) and (only_step is None or only_step == 2):
+        print("\n🚀 Step 2: 生成章节内容 (novel_generator)")
+        print("-" * 60)
+        try:
+            from novel_generator import load_architecture, generate_chapters
+            architecture = load_architecture(book_dir)
+            await generate_chapters(
+                architecture=architecture,
+                start_chapter=getattr(args, 'start', 1) or 1,
+                count=chapter_count,
+                output_dir=book_dir,
+            )
+            print("✅ Step 2 完成")
+            log_execution(2, "generate_chapters", success=True, platform="fanqie", account=account_name)
+        except Exception as e:
+            print(f"❌ Step 2 失败: {e}")
+            log_execution(2, "generate_chapters", success=False, error_msg=str(e), platform="fanqie", account=account_name)
+            sys.exit(1)
+        if only_step == 2:
+            return
+    else:
+        print("\n⏭️  Step 2: 跳过")
+
+    # --- Step 3: 番茄小说发布 ---
+    if (start_step <= 3) and (only_step is None or only_step == 3):
+        print("\n🚀 Step 3: 番茄小说发布 (fanqie.publisher)")
+        print("-" * 60)
+        try:
+            from fanqie.publisher import publish as fanqie_publish
+            await fanqie_publish(book_dir=book_dir, account_name=account_name)
+            print("✅ Step 3 完成")
+            log_execution(3, "fanqie_publish", success=True, platform="fanqie", account=account_name)
+        except Exception as e:
+            print(f"❌ Step 3 失败: {e}")
+            log_execution(3, "fanqie_publish", success=False, error_msg=str(e), platform="fanqie", account=account_name)
+            sys.exit(1)
+    else:
+        print("\n⏭️  Step 3: 跳过")
+
+    print("\n🎉 番茄小说链路执行完毕！")
+
+
 # ==================== 统一入口 ====================
 
 def main():
@@ -252,6 +354,13 @@ def main():
     python run.py --platform xiaohongshu --only 1           # 只生成文案
     python run.py --platform xiaohongshu --only 2           # 只发布
 
+  番茄小说链路:
+    python run.py --platform fanqie --topic "都市重生"       # 完整流程
+    python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --chapters 10
+    python run.py --platform fanqie --topic "都市重生" --only 1   # 只生成架构
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 2  # 只生成章节
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 3  # 只发布
+
   多账号管理:
     python run.py --platform douyin --account list          # 列出所有账号
     python run.py --platform douyin --account create my_acc # 创建新账号
@@ -261,8 +370,8 @@ def main():
     parser.add_argument(
         "--platform", "-p",
         required=True,
-        choices=["douyin", "xiaohongshu"],
-        help="选择平台: douyin (抖音) 或 xiaohongshu (小红书)",
+        choices=["douyin", "xiaohongshu", "fanqie"],
+        help="选择平台: douyin (抖音), xiaohongshu (小红书), fanqie (番茄小说)",
     )
     # 通用参数
     parser.add_argument(
@@ -302,6 +411,28 @@ def main():
         "--input", "-i",
         help="[小红书] 指定已有 JSON 文件，跳过文案生成",
     )
+    # 番茄小说专用参数
+    fanqie_group = parser.add_argument_group("番茄小说参数")
+    fanqie_group.add_argument(
+        "--genre",
+        help="[番茄] 小说分类 (如: 玄幻, 都市, 科幻, 仙侠, 言情)",
+    )
+    fanqie_group.add_argument(
+        "--gender", default="male", choices=["male", "female"],
+        help="[番茄] 目标读者 (male=男频, female=女频, 默认: male)",
+    )
+    fanqie_group.add_argument(
+        "--chapters", type=int, default=10,
+        help="[番茄] 生成章节数量 (默认: 10)",
+    )
+    fanqie_group.add_argument(
+        "--start", type=int, default=1,
+        help="[番茄] 从第N章开始生成 (默认: 1)",
+    )
+    fanqie_group.add_argument(
+        "--book-dir",
+        help="[番茄] 已有小说目录，用于继续生成或发布",
+    )
 
     args = parser.parse_args()
 
@@ -329,6 +460,8 @@ def main():
         asyncio.run(run_douyin_pipeline(args))
     elif args.platform == "xiaohongshu":
         asyncio.run(run_xiaohongshu_pipeline(args))
+    elif args.platform == "fanqie":
+        asyncio.run(run_fanqie_pipeline(args))
 
 
 if __name__ == "__main__":
