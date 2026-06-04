@@ -19,11 +19,13 @@
     python run.py --platform xiaohongshu --only 2           # 只发布
 
 番茄小说链路 (fanqie):
-    python run.py --platform fanqie --topic "都市重生"       # 完整流程：架构→章节→发布
-    python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --chapters 10
-    python run.py --platform fanqie --topic "都市重生" --only 1   # 只生成架构
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 2  # 只生成章节
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 3  # 只发布
+    python run.py --platform fanqie --topic "都市重生"              # 完整流程：架构→章节→发布
+    python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --outlines 10 --chapters 5
+    python run.py --platform fanqie --topic "都市重生" --only 1    # 只生成架构
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 2  # 生成章节（默认3章）
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 2 --chapters 5  # 生成5章
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 3  # 发布（默认3章）
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 3 --chapters 1  # 发布1章
 
 多账号管理:
     python run.py --platform douyin --account list          # 列出所有账号
@@ -249,7 +251,8 @@ async def run_fanqie_pipeline(args):
     only_step = args.only
     genre = getattr(args, 'genre', '') or ''
     gender = getattr(args, 'gender', 'male') or 'male'
-    chapter_count = getattr(args, 'chapters', 10) or 10
+    outline_count = getattr(args, 'outlines', 10) or 10
+    chapter_count = getattr(args, 'chapters', 3) or 3
     book_dir = getattr(args, 'book_dir', None)
 
     # 确定小说输出目录
@@ -262,7 +265,7 @@ async def run_fanqie_pipeline(args):
         dir_name = args.topic.replace(" ", "_")[:20]
         book_dir = os.path.join(novels_dir, dir_name)
 
-    # --- Step 1: 生成小说架构 ---
+    # --- Step 1: 生成小说架构（只生成大纲，不生成章节内容）---
     if (start_step <= 1) and (only_step is None or only_step == 1):
         print("\n🚀 Step 1: 生成小说架构 (novel_generator)")
         print("-" * 60)
@@ -272,7 +275,7 @@ async def run_fanqie_pipeline(args):
                 topic=args.topic,
                 genre=genre,
                 gender=gender,
-                chapter_count=chapter_count,
+                chapter_count=outline_count,
                 output_dir=book_dir,
             )
             print(f"✅ Step 1 完成 -> {book_dir}")
@@ -286,7 +289,7 @@ async def run_fanqie_pipeline(args):
     else:
         print("\n⏭️  Step 1: 跳过")
 
-    # --- Step 2: 生成章节内容 ---
+    # --- Step 2: 生成章节内容（默认3章，可通过 --chapters 指定）---
     if (start_step <= 2) and (only_step is None or only_step == 2):
         print("\n🚀 Step 2: 生成章节内容 (novel_generator)")
         print("-" * 60)
@@ -310,13 +313,13 @@ async def run_fanqie_pipeline(args):
     else:
         print("\n⏭️  Step 2: 跳过")
 
-    # --- Step 3: 番茄小说发布 ---
+    # --- Step 3: 番茄小说发布（默认3章，可通过 --chapters 指定）---
     if (start_step <= 3) and (only_step is None or only_step == 3):
         print("\n🚀 Step 3: 番茄小说发布 (fanqie.publisher)")
         print("-" * 60)
         try:
             from fanqie.publisher import publish as fanqie_publish
-            await fanqie_publish(book_dir=book_dir, account_name=account_name)
+            await fanqie_publish(book_dir=book_dir, account_name=account_name, limit=chapter_count)
             print("✅ Step 3 完成")
             log_execution(3, "fanqie_publish", success=True, platform="fanqie", account=account_name)
         except Exception as e:
@@ -422,8 +425,12 @@ def main():
         help="[番茄] 目标读者 (male=男频, female=女频, 默认: male)",
     )
     fanqie_group.add_argument(
-        "--chapters", type=int, default=10,
-        help="[番茄] 生成章节数量 (默认: 10)",
+        "--outlines", type=int, default=10,
+        help="[番茄] Step1 架构中生成的章节数量 (默认: 10)",
+    )
+    fanqie_group.add_argument(
+        "--chapters", "-c", type=int, default=3,
+        help="[番茄] Step2/3 每批次生成/发布章节数量 (默认: 3)",
     )
     fanqie_group.add_argument(
         "--start", type=int, default=1,

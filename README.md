@@ -203,6 +203,20 @@ Step 2: 浏览器自动打开小红书创作者中心，自动填写、自动发
 ✅ 发布完成！
 ```
 
+### 番茄小说发布（3 步全自动）
+
+```
+你输入一个题材（比如"玄幻修仙"）
+    ↓
+Step 1: AI 生成整部小说架构（书名、简介、世界观、人物、章节大纲）
+    ↓
+Step 2: AI 逐章生成小说正文（默认 3 章，可指定数量）
+    ↓
+Step 3: 浏览器自动打开番茄小说创作者后台，自动填写、自动发布
+    ↓
+✅ 发布完成！后续可随时追加新章节
+```
+
 ---
 
 ## 🛠 环境准备（必看！）
@@ -407,6 +421,15 @@ uv run python run.py --platform xiaohongshu --only 1
 
 同样会弹出浏览器，用手机小红书 APP 扫码登录。
 
+### 第一次发布到番茄小说
+
+```bash
+# 只运行第一步（触发登录，不实际发布）
+uv run python run.py --platform fanqie --topic "都市重生" --only 1
+```
+
+弹出浏览器后，在番茄小说创作者后台登录（支持手机号、抖音账号等）。登录状态会保存，后续自动复用。
+
 ### 登录完成后，正式发布
 
 ```bash
@@ -496,6 +519,61 @@ uv run python run.py --platform xiaohongshu --only 1
 uv run python run.py --platform xiaohongshu --only 2
 ```
 
+### 番茄小说发布
+
+```bash
+# ========== 完整流程 ==========
+
+# 一条命令搞定：生成架构 + 生成3章 + 发布3章
+uv run python run.py --platform fanqie --topic "都市重生"
+
+# 指定分类和章节数
+uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --chapters 5
+
+# 生成更多章节大纲（默认10章）
+uv run python run.py --platform fanqie --topic "都市重生" --outlines 20
+
+# ========== 分步执行 ==========
+
+# Step 1: 只生成小说架构（书名、简介、世界观、人物、章节大纲）
+uv run python run.py --platform fanqie --topic "都市重生" --only 1
+
+# Step 2: 生成章节内容（默认3章）
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 2
+
+# Step 2: 生成5章内容
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 2 --chapters 5
+
+# Step 3: 发布到番茄小说（默认3章）
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 3
+
+# Step 3: 只发布1章
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 3 --chapters 1
+
+# ========== 追加章节（后续加更）==========
+
+# 在现有架构上追加3章大纲 + 生成内容
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 3 --add 3
+
+# 追加5章
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 3 --add 5
+```
+
+### 番茄小说参数速查表
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--topic` | 都市重生 | 小说题材（如"玄幻修仙"、"都市重生"） |
+| `--genre` | 自动判断 | 小说分类（玄幻、都市、科幻、仙侠、言情等） |
+| `--outlines` | 10 | Step 1 架构中生成的章节数量 |
+| `--chapters` / `-c` | 3 | Step 2/3 每批次生成/发布章节数量 |
+| `--start` | 1 | 从第 N 章开始生成 |
+| `--book-dir` | 自动生成 | 已有小说目录（用于继续生成或发布） |
+| `--only 1` | - | 只生成架构 |
+| `--only 2` | - | 只生成章节内容 |
+| `--only 3` | - | 只发布到番茄小说 |
+| `--only 3 --add N` | - | 追加 N 章大纲 + 生成内容（用 novel_generator.py） |
+
 ### 查看帮助
 
 ```bash
@@ -503,7 +581,7 @@ uv run python run.py --platform xiaohongshu --only 2
 uv run python run.py --help
 ```
 
-### 参数速查表
+### 通用参数速查表
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
@@ -601,8 +679,14 @@ browser/
 ├── run.py                  # 🚀 主入口脚本（你平时就运行这个）
 ├── generate.py             # 🤖 AI 内容生成模块（调用 LLM 生成文案和图片描述）
 ├── doubao.py               # 🎨 豆包 AI 生图模块（自动操作豆包网站生成图片）
+├── novel_generator.py      # 📖 小说生成模块（生成架构+章节内容）
 ├── account_manager.py      # 👤 账号管理模块（管理多个账号的目录和配置）
 ├── prompts.json            # 📝 AI 提示词配置（定义了 AI 的角色和生成规则）
+│
+├── prompts/                # 📝 提示词文件目录
+│   ├── roles/              #    角色设定
+│   └── instructions/       #    生成指令
+│       └── novel_architecture.md  # 小说架构生成提示词
 │
 ├── douyin/                 # 📱 抖音发布模块
 │   ├── __init__.py
@@ -612,11 +696,21 @@ browser/
 │   ├── __init__.py
 │   └── publisher.py        #    小红书自动发布（操作浏览器完成发布）
 │
+├── fanqie/                 # 📚 番茄小说发布模块
+│   ├── __init__.py
+│   └── publisher.py        #    番茄小说自动发布（操作浏览器完成发布）
+│
 ├── accounts/               # 💾 账号数据目录（每个账号独立）
 │   ├── legacy/             #    默认账号
 │   │   ├── browser_profile/ #      浏览器登录状态
 │   │   ├── doubao.json     #      AI 生成的内容
-│   │   └── doubao_output/  #      AI 生成的图片
+│   │   ├── doubao_output/  #      AI 生成的图片
+│   │   └── novels/         #      小说数据
+│   │       └── <题材>/     #        按题材分目录
+│   │           ├── architecture.json  # 小说架构（书名、简介、人物、大纲）
+│   │           ├── chapter_1.json     # 第1章内容
+│   │           ├── chapter_2.json     # 第2章内容
+│   │           └── publish_state.json # 发布状态记录
 │   └── <其他账号>/         #    其他账号（结构同上）
 │
 ├── assets/                 # 🖼 README 效果图（展示用）
@@ -636,10 +730,13 @@ browser/
 | `run.py` | 主入口，统一调度所有功能 | ❌ 不需要 |
 | `generate.py` | 调用 LLM 生成文案 | ❌ 不需要 |
 | `doubao.py` | 调用豆包 AI 生成图片 | ❌ 不需要 |
-| `doubayin/publisher.py` | 自动发布到抖音 | ❌ 不需要 |
+| `novel_generator.py` | 小说架构+章节内容生成 | ❌ 不需要 |
+| `douyin/publisher.py` | 自动发布到抖音 | ❌ 不需要 |
 | `xiaohongshu/publisher.py` | 自动发布到小红书 | ❌ 不需要 |
+| `fanqie/publisher.py` | 自动发布到番茄小说 | ❌ 不需要 |
 | `account_manager.py` | 管理多账号 | ❌ 不需要 |
 | `prompts.json` | AI 的角色和提示词 | 🔧 可选：想自定义 AI 风格时修改 |
+| `prompts/instructions/novel_architecture.md` | 小说架构生成提示词 | 🔧 可选：想调整小说风格时修改 |
 | `.env` | API 密钥 | ✅ **必须配置！** |
 | `accounts/` | 账号数据 | ❌ 自动生成，不要手动改 |
 
@@ -745,6 +842,40 @@ cat logs/$(date +%Y-%m-%d).jsonl
 #### Q: 我想自定义 AI 的写作风格怎么办？
 
 **A:** 编辑 `prompts.json` 文件。里面定义了 AI 的角色设定（`roles`）和生成指令（`system_prompts`），你可以根据需要修改。
+
+### 番茄小说相关
+
+#### Q: 番茄小说的三步分别生成什么？
+
+**A:**
+- **Step 1**（`--only 1`）：生成小说架构 —— 书名、简介、世界观、人物设定、章节大纲。只出大纲，不写正文。
+- **Step 2**（`--only 2`）：根据大纲逐章生成小说正文。默认 3 章，可用 `--chapters` 指定数量。
+- **Step 3**（`--only 3`）：自动发布到番茄小说创作者后台。默认发布 3 章，可用 `--chapters` 指定。
+
+#### Q: 怎么追加新章节（加更）？
+
+**A:** 用 `novel_generator.py` 的 `--only 3`：
+```bash
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 3 --add 5
+```
+这会在现有架构上追加 5 章大纲，并自动生成内容。不会覆盖已有章节。
+
+#### Q: 书名太长/太短怎么办？
+
+**A:** 书名限制 5-10 个字。AI 生成时会在提示词中限制，发布时也会自动校验（超过 10 字自动截断）。
+
+#### Q: `--outlines` 和 `--chapters` 有什么区别？
+
+**A:**
+- `--outlines`（默认 10）：Step 1 生成多少章大纲。比如设 100，就会生成 100 章的剧情规划。
+- `--chapters`（默认 3）：Step 2/3 每批次生成/发布几章。比如设 5，每次就生成 5 章内容。
+
+#### Q: 发布时提示"所有章节已发布"怎么办？
+
+**A:** 说明本地记录显示所有章节都已发布。如果需要重新发布，删除 `publish_state.json`：
+```bash
+rm accounts/legacy/novels/玄幻修仙/publish_state.json
+```
 
 ---
 

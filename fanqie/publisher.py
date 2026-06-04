@@ -32,6 +32,7 @@ from novel_generator import load_architecture, load_chapter, list_chapters
 
 # ==================== 配置区 ====================
 WRITER_URL = "https://fanqienovel.com/main/writer/"
+BOOK_MANAGE_URL = "https://fanqienovel.com/main/writer/book-manage"
 CREATE_BOOK_URL = "https://fanqienovel.com/main/writer/create"
 
 
@@ -112,6 +113,13 @@ async def create_book(page, architecture: dict) -> str:
     summary = architecture.get("summary", "")
     category = architecture.get("category", "")
     gender = architecture.get("gender", "male")
+
+    # 书名长度限制：5~10个字
+    if len(book_name) > 10:
+        book_name = book_name[:10]
+        print(f"⚠️  书名超过10字，已截断为: {book_name}")
+    elif len(book_name) < 5:
+        print(f"⚠️  书名不足5字（当前{len(book_name)}字），请检查架构配置")
 
     print(f"\n📚 创建新书: {book_name}")
     print(f"   分类: {category} | {'男频' if gender == 'male' else '女频'}")
@@ -243,22 +251,48 @@ async def publish_chapter(page, chapter: dict, architecture: dict):
     """
     发布单个章节
 
+    流程（基于实际页面结构）：
+    1. 打开书籍管理页面
+    2. 点击"创建章节" → 新标签页打开编辑器
+    3. 填写章节序号（第一个 input[type=text]）
+    4. 填写标题（input[placeholder='请输入标题']）
+    5. 填写正文（div.ProseMirror）
+    6. 点击"下一步"
+    7. 处理后续弹窗和AI声明
+    8. 确认发布
+
     Args:
         page: Playwright page 对象
         chapter: 章节字典 {chapter_num, title, content}
         architecture: 小说架构字典
     """
+    context = page.context
     chapter_num = chapter.get("chapter_num", 0)
     title = chapter.get("title", f"第{chapter_num}章")
     content = chapter.get("content", "")
 
+    # 提取纯标题（去掉"第X章"前缀）
+    if title.startswith(f"第{chapter_num}章"):
+        pure_title = title[len(f"第{chapter_num}章"):].strip()
+    elif title.startswith("第") and "章" in title:
+        pure_title = title.split("章", 1)[1].strip()
+    else:
+        pure_title = title
+
     print(f"\n📝 发布第 {chapter_num} 章: {title}")
     print(f"   内容长度: {len(content)} 字")
 
-    # 步骤1：点击"写新章节"或"新建章节"
-    print("  📝 点击「写新章节」...")
+    # 步骤1：打开书籍管理页面
+    print("  📝 打开书籍管理页面...")
+    await page.goto(BOOK_MANAGE_URL, wait_until="domcontentloaded", timeout=30000)
+    await page.wait_for_timeout(3000)
+
+    # 步骤2：点击"创建章节"，等待新标签页
+    print("  📝 点击「创建章节」...")
+    old_pages = set(context.pages)
+
     clicked = False
-    for btn_text in ["写新章节", "新建章节", "新增章节", "添加章节", "创建章节"]:
+    for btn_text in ["创建章节", "新建章节"]:
         try:
             btn = page.get_by_text(btn_text, exact=False).first
             if await btn.is_visible(timeout=3000):
@@ -270,127 +304,169 @@ async def publish_chapter(page, chapter: dict, architecture: dict):
             pass
 
     if not clicked:
-        # 尝试通过链接或按钮选择器
-        try:
-            btn = page.locator('a:has-text("章节"), button:has-text("章节"), [class*="chapter"] button').first
-            if await btn.is_visible(timeout=3000):
-                await btn.click()
-                print("    ✅ 已通过选择器点击")
-                clicked = True
-        except Exception:
-            pass
-
-    if not clicked:
-        print("    ⚠️ 未找到新建章节按钮，请手动操作")
+        print("    ⚠️ 未找到创建章节按钮，请手动操作")
         input("    操作完成后按回车继续 >>> ")
 
-    await page.wait_for_timeout(3000)
+    # 等待新标签页打开
+    print("  ⏳ 等待新页面加载...")
+    await page.wait_for_timeout(5000)
 
-    # 步骤2：填写章节标题
-    print(f"  📝 填写标题: {title}")
+    # 找到新打开的编辑器页面
+    editor_page = None
+    for p in context.pages:
+        if p not in old_pages and "publish" in p.url:
+            editor_page = p
+            break
+
+    if not editor_page and len(context.pages) > len(old_pages):
+        editor_page = context.pages[-1]
+
+    if not editor_page:
+        print("    ❌ 未找到编辑器页面")
+        return
+
+    print(f"    ✅ 编辑器页面: {editor_page.url}")
+    await editor_page.bring_to_front()
+    await editor_page.wait_for_timeout(3000)
+
+    # 步骤3：填写章节序号（第一个 input[type=text]）
+    print(f"  📝 填写章节序号: {chapter_num}")
     try:
-        title_input = page.locator(
-            'input[placeholder*="标题"], input[placeholder*="章节"], '
-            'textarea[placeholder*="标题"], textarea[placeholder*="章节"]'
-        ).first
+        serial_input = editor_page.locator('input[type="text"].serial-input, input.serial-input').first
+        if await serial_input.is_visible(timeout=5000):
+            await serial_input.click()
+            await serial_input.fill("")
+            await serial_input.fill(str(chapter_num))
+            print(f"    ✅ 章节序号已填入: {chapter_num}")
+        else:
+            print("    ⚠️ 未找到章节序号输入框")
+    except Exception as e:
+        print(f"    ⚠️ 章节序号填写失败: {e}")
+
+    await editor_page.wait_for_timeout(500)
+
+    # 步骤4：填写标题
+    chapter_title = pure_title if pure_title else f"第{chapter_num}章"
+    print(f"  📝 填写标题: {chapter_title}")
+    try:
+        title_input = editor_page.locator('input[placeholder="请输入标题"]').first
         if await title_input.is_visible(timeout=5000):
             await title_input.click()
             await title_input.fill("")
-            await title_input.fill(title)
-            print("    ✅ 标题已填入")
+            await title_input.fill(chapter_title)
+            print(f"    ✅ 标题已填入: {chapter_title}")
         else:
             print("    ⚠️ 未找到标题输入框")
     except Exception as e:
         print(f"    ⚠️ 标题填写失败: {e}")
 
-    await page.wait_for_timeout(1000)
+    await editor_page.wait_for_timeout(500)
 
-    # 步骤3：填写章节正文
+    # 步骤5：填写正文内容（ProseMirror 编辑器）
     print("  📝 填写正文...")
     try:
-        # 尝试多种编辑器选择器
-        editor = None
-        selectors = [
-            '[contenteditable="true"]',
-            'textarea[placeholder*="正文"], textarea[placeholder*="内容"]',
-            '.ql-editor',  # Quill 编辑器
-            '.ProseMirror',  # ProseMirror 编辑器
-            '[class*="editor"] [contenteditable]',
-            '[class*="content"] textarea',
-        ]
-
-        for sel in selectors:
-            try:
-                el = page.locator(sel).first
-                if await el.is_visible(timeout=2000):
-                    editor = el
-                    break
-            except Exception:
-                continue
-
-        if editor:
+        editor = editor_page.locator('.ProseMirror').first
+        if await editor.is_visible(timeout=5000):
             await editor.click()
-            await page.keyboard.press("Control+a")
-            await page.keyboard.press("Delete")
-            await page.keyboard.insert_text(content)
-            await page.wait_for_timeout(500)
+            await editor_page.wait_for_timeout(3000)
+
+            # 全选并删除现有内容
+            await editor_page.keyboard.press("Control+a")
+            await editor_page.wait_for_timeout(300)
+            await editor_page.keyboard.press("Delete")
+            await editor_page.wait_for_timeout(500)
+
+            # 使用 insertText 输入内容（比 type 更快）
+            await editor_page.keyboard.insert_text(content)
+            await editor_page.wait_for_timeout(1000)
             print(f"    ✅ 正文已填入 ({len(content)} 字)")
         else:
-            print("    ⚠️ 未找到正文编辑器，请手动输入")
-            input("    操作完成后按回车继续 >>> ")
+            print("    ⚠️ 未找到正文编辑器")
+            input("    请手动输入内容后按回车继续 >>> ")
     except Exception as e:
         print(f"    ⚠️ 正文填写失败: {e}")
 
-    await page.wait_for_timeout(2000)
+    await editor_page.wait_for_timeout(2000)
 
-    # 步骤4：点击发布/存为草稿
-    print("  📝 点击发布...")
-    published = False
-    for btn_text in ["发布", "发布章节", "发表", "立即发布", "提交发布"]:
+    # 步骤6：点击"下一步"
+    print("  📝 点击「下一步」...")
+    try:
+        next_btn = editor_page.get_by_text("下一步", exact=False).first
+        if await next_btn.is_visible(timeout=5000):
+            await next_btn.click()
+            print("    ✅ 已点击「下一步」")
+        else:
+            print("    ⚠️ 未找到下一步按钮")
+    except Exception as e:
+        print(f"    ⚠️ 点击下一步失败: {e}")
+
+    await editor_page.wait_for_timeout(5000)
+
+    # 步骤7：处理弹窗（提交）
+    print("  📝 点击「提交」...")
+    for btn_text in ["提交", "确认", "确定", "提交发布"]:
         try:
-            btn = page.get_by_text(btn_text, exact=True).first
+            btn = editor_page.get_by_text(btn_text, exact=True).first
             if await btn.is_visible(timeout=3000):
                 await btn.click()
                 print(f"    ✅ 已点击「{btn_text}」")
-                published = True
                 break
         except Exception:
             pass
 
-    if not published:
+    # 等待500ms，出现"请选择内容检测方式"弹窗
+    await editor_page.wait_for_timeout(500)
+
+    # 步骤8：点击"仅基础检测"
+    print("  📝 点击「仅基础检测」...")
+    try:
+        basic_check_btn = editor_page.get_by_text("仅基础检测", exact=False).first
+        if await basic_check_btn.is_visible(timeout=3000):
+            await basic_check_btn.click()
+            print("    ✅ 已点击「仅基础检测」")
+        else:
+            print("    ⚠️ 未找到「仅基础检测」按钮")
+    except Exception:
+        pass
+
+    await editor_page.wait_for_timeout(2000)
+
+    # 步骤9：检查"是否使用AI"，点击"是"
+    print("  📝 检查AI声明...")
+    try:
+        ai_yes_btn = editor_page.get_by_text("是", exact=True).first
+        if await ai_yes_btn.is_visible(timeout=3000):
+            await ai_yes_btn.click()
+            print("    ✅ 已点击「是」（使用AI）")
+    except Exception:
+        pass
+
+    await editor_page.wait_for_timeout(2000)
+
+    # 步骤10：点击"确认发布"
+    print("  📝 点击「确认发布」...")
+    for btn_text in ["确认发布", "确认", "确定", "发布"]:
         try:
-            btn = page.locator('button:has-text("发布"), button:has-text("发表"), button:has-text("提交")').first
+            btn = editor_page.get_by_text(btn_text, exact=True).first
             if await btn.is_visible(timeout=3000):
                 await btn.click()
-                print("    ✅ 已通过选择器点击发布")
-                published = True
-        except Exception:
-            pass
-
-    if not published:
-        print("    ⚠️ 未找到发布按钮，请手动点击")
-        input("    操作完成后按回车继续 >>> ")
-
-    # 处理确认弹窗
-    await page.wait_for_timeout(2000)
-    for confirm_text in ["确认发布", "确认", "确定", "好的"]:
-        try:
-            confirm_btn = page.get_by_text(confirm_text, exact=True).first
-            if await confirm_btn.is_visible(timeout=2000):
-                await confirm_btn.click()
-                print(f"    ✅ 已确认「{confirm_text}」")
+                print(f"    ✅ 已点击「{btn_text}」")
                 break
         except Exception:
             pass
 
-    # 等待发布结果
-    await page.wait_for_timeout(3000)
+    # 等待发布完成
+    await editor_page.wait_for_timeout(5000)
     print(f"  ✅ 第 {chapter_num} 章发布完成！")
+
+    # 关闭编辑器标签页，回到管理页面
+    await editor_page.close()
+    await page.bring_to_front()
 
 
 # ==================== 主入口 ====================
 
-async def publish(book_dir: str, account_name: str = "legacy", only: str = None):
+async def publish(book_dir: str, account_name: str = "legacy", only: str = None, limit: int = 3):
     """
     主入口：将小说发布到番茄小说
 
@@ -398,6 +474,7 @@ async def publish(book_dir: str, account_name: str = "legacy", only: str = None)
         book_dir: 小说数据目录（包含 architecture.json 和 chapter_*.json）
         account_name: 账号名称
         only: 只执行某个操作 ("create" = 只创建书籍, "publish" = 只发布章节)
+        limit: 最多发布章节数（默认3）
     """
     # 确保账号存在
     ensure_account_exists(account_name)
@@ -424,6 +501,9 @@ async def publish(book_dir: str, account_name: str = "legacy", only: str = None)
         if not unpublished:
             print("✅ 所有章节已发布，无需操作")
             return
+        # 限制本次发布的章节数
+        if limit and len(unpublished) > limit:
+            unpublished = unpublished[:limit]
         print(f"📤 待发布 {len(unpublished)} 章: 第{unpublished[0]}章 ~ 第{unpublished[-1]}章")
 
     # 浏览器数据目录（复用账号的 browser_profile）
@@ -439,17 +519,6 @@ async def publish(book_dir: str, account_name: str = "legacy", only: str = None)
         headless=False,
     )
 
-    # 劫持 attachShadow
-    await context.add_init_script("""
-        const original = Element.prototype.attachShadow;
-        Element.prototype.attachShadow = function(opts) {
-            if (opts && opts.mode === 'closed') {
-                opts.mode = 'open';
-            }
-            return original.call(this, opts);
-        };
-    """)
-
     # 反 webdriver 检测
     await context.add_init_script("""
         Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
@@ -461,17 +530,14 @@ async def publish(book_dir: str, account_name: str = "legacy", only: str = None)
         # 登录检测
         await ensure_logged_in(page)
 
-        # 创建书籍
-        if only != "publish":
+        # 创建书籍（仅在显式指定 --only create 时执行）
+        if only == "create":
             if state.get("book_id"):
                 print(f"\n📚 书籍已创建 (ID: {state['book_id']})，跳过创建步骤")
             else:
                 await create_book(page, architecture)
-                # 保存当前 URL 作为 book_id 标识
                 state["book_id"] = page.url
                 save_publish_state(book_dir, state)
-
-        if only == "create":
             print("\n✅ 书籍创建完成！")
             return
 

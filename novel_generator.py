@@ -92,6 +92,9 @@ async def generate_architecture(
     print(f"🤖 正在生成小说架构...")
     print(f"   题材: {topic} | 分类: {genre or '自动'} | {'男频' if gender == 'male' else '女频'} | {chapter_count}章")
 
+    # 根据章节数动态计算 max_tokens（每章约 120 tokens + 结构开销）
+    max_tokens = min(max(8192, chapter_count * 150 + 2000), 65536)
+
     response = await client.chat.completions.create(
         model=MODEL,
         messages=[
@@ -99,7 +102,7 @@ async def generate_architecture(
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.8,
-        max_tokens=8192,
+        max_tokens=max_tokens,
     )
 
     raw = response.choices[0].message.content.strip()
@@ -143,6 +146,112 @@ async def generate_architecture(
         print(f"   ✅ 已保存到: {arch_path}")
 
     return result
+
+
+# ==================== Phase 1.5: 扩展小说架构（追加章节大纲）====================
+
+async def extend_architecture(
+    architecture: dict,
+    add_count: int = 3,
+    output_dir: str = None,
+) -> dict:
+    """
+    在现有架构基础上追加新的章节大纲
+
+    Args:
+        architecture: 已有的小说架构字典
+        add_count: 要追加的章节数量
+        output_dir: 输出目录，为空则不保存文件
+
+    Returns:
+        更新后的架构字典
+    """
+    client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
+
+    existing_chapters = architecture.get("chapters", [])
+    current_count = len(existing_chapters)
+    start_num = current_count + 1
+    end_num = current_count + add_count
+
+    # 构建已有章节摘要，让 LLM 了解前情
+    existing_outline = []
+    for ch in existing_chapters:
+        existing_outline.append(f"第{ch['chapter_num']}章 {ch['title']}：{ch['outline']}")
+    existing_text = "\n".join(existing_outline)
+
+    user_prompt = f"""【书名】{architecture.get('book_name', '')}
+【简介】{architecture.get('summary', '')}
+【世界观】{architecture.get('world_setting', '')}
+
+【已有章节大纲】
+{existing_text}
+
+请基于以上已有章节，继续生成第{start_num}章到第{end_num}章的大纲，保持剧情连贯性，输出以下 JSON 格式，不要输出任何额外文字：
+
+[
+  {{
+    "chapter_num": {start_num},
+    "title": "章节标题，有吸引力",
+    "outline": "本章大纲，100-200字，描述主要事件、冲突和转折"
+  }}
+]
+
+要求：
+- 延续已有章节的剧情线，不要重复已有内容
+- 章节之间要有清晰的剧情推进，前后呼应
+- 每章大纲要包含：本章主要事件、关键冲突、章末悬念
+- 逐步升级冲突和主角实力，节奏紧凑"""
+
+    print(f"🤖 正在扩展架构: 追加第{start_num}~{end_num}章...")
+
+    role = _load_prompt_file("roles", "novel")
+    system_prompt = role
+
+    # 根据追加章节数动态计算 max_tokens
+    max_tokens = min(max(8192, add_count * 150 + 2000), 65536)
+
+    response = await client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.8,
+        max_tokens=max_tokens,
+    )
+
+    raw = response.choices[0].message.content.strip()
+
+    # 解析 JSON
+    json_str = raw
+    if "```json" in json_str:
+        json_str = json_str.split("```json")[1].split("```")[0].strip()
+    elif "```" in json_str:
+        json_str = json_str.split("```")[1].split("```")[0].strip()
+
+    try:
+        new_chapters = json.loads(json_str)
+    except json.JSONDecodeError:
+        print("⚠️ JSON 解析失败，尝试自动修复...")
+        json_str = fix_json(json_str)
+        new_chapters = json.loads(json_str)
+
+    # 合并到现有架构
+    architecture["chapters"].extend(new_chapters)
+
+    print(f"✅ 架构扩展完成: 现共 {len(architecture['chapters'])} 章")
+    for ch in new_chapters:
+        print(f"   第{ch['chapter_num']}章: {ch['title']}")
+
+    # 保存
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        arch_path = os.path.join(output_dir, "architecture.json")
+        with open(arch_path, "w", encoding="utf-8") as f:
+            json.dump(architecture, f, ensure_ascii=False, indent=2)
+        print(f"   ✅ 已保存到: {arch_path}")
+
+    return architecture
 
 
 # ==================== Phase 2: 生成章节内容 ====================
@@ -362,9 +471,10 @@ async def main():
     parser.add_argument("--chapters", "-c", type=int, default=10, help="章节数量 (默认: 10)")
     parser.add_argument("--output", "-o", help="输出目录")
     parser.add_argument("--account", default="legacy", help="账号名称")
-    parser.add_argument("--only", type=int, choices=[1, 2], help="只执行某步 (1=架构, 2=章节)")
+    parser.add_argument("--only", type=int, choices=[1, 2, 3], help="只执行某步 (1=架构, 2=章节, 3=扩展架构+生成新章节)")
     parser.add_argument("--start", type=int, default=1, help="从第N章开始生成 (仅 step 2)")
     parser.add_argument("--book-dir", help="已有小说目录 (用于继续生成章节)")
+    parser.add_argument("--add", type=int, default=3, help="追加章节数量 (配合 --only 3 使用，默认3章)")
 
     args = parser.parse_args()
 
@@ -397,6 +507,22 @@ async def main():
         # 加载已有架构
         architecture = load_architecture(book_dir)
         print(f"📖 已加载架构: {architecture.get('book_name', '')}")
+
+    # Step 3: 扩展架构 + 生成新章节
+    if args.only == 3:
+        old_count = len(architecture.get("chapters", []))
+        architecture = await extend_architecture(
+            architecture=architecture,
+            add_count=args.add,
+            output_dir=book_dir,
+        )
+        await generate_chapters(
+            architecture=architecture,
+            start_chapter=old_count + 1,
+            count=args.add,
+            output_dir=book_dir,
+        )
+        return
 
     # Step 2: 生成章节
     if args.only is None or args.only == 2:
