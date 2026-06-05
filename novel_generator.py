@@ -152,7 +152,7 @@ async def generate_architecture(
 
 async def extend_architecture(
     architecture: dict,
-    add_count: int = 3,
+    add_count: int = 2,
     output_dir: str = None,
 ) -> dict:
     """
@@ -474,7 +474,7 @@ async def main():
     parser.add_argument("--only", type=int, choices=[1, 2, 3], help="只执行某步 (1=架构, 2=章节, 3=扩展架构+生成新章节)")
     parser.add_argument("--start", type=int, default=1, help="从第N章开始生成 (仅 step 2)")
     parser.add_argument("--book-dir", help="已有小说目录 (用于继续生成章节)")
-    parser.add_argument("--add", type=int, default=3, help="追加章节数量 (配合 --only 3 使用，默认3章)")
+    parser.add_argument("--add", type=int, default=2, help="追加章节数量 (配合 --only 3 使用，默认2章)")
 
     args = parser.parse_args()
 

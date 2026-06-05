@@ -466,7 +466,7 @@ async def publish_chapter(page, chapter: dict, architecture: dict):
 
 # ==================== 主入口 ====================
 
-async def publish(book_dir: str, account_name: str = "legacy", only: str = None, limit: int = 3):
+async def publish(book_dir: str, account_name: str = "legacy", only: str = None, limit: int = 2):
     """
     主入口：将小说发布到番茄小说
 
@@ -474,7 +474,7 @@ async def publish(book_dir: str, account_name: str = "legacy", only: str = None,
         book_dir: 小说数据目录（包含 architecture.json 和 chapter_*.json）
         account_name: 账号名称
         only: 只执行某个操作 ("create" = 只创建书籍, "publish" = 只发布章节)
-        limit: 最多发布章节数（默认3）
+        limit: 最多发布章节数（默认2）
     """
     # 确保账号存在
     ensure_account_exists(account_name)

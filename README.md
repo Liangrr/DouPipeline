@@ -210,7 +210,7 @@ Step 2: 浏览器自动打开小红书创作者中心，自动填写、自动发
     ↓
 Step 1: AI 生成整部小说架构（书名、简介、世界观、人物、章节大纲）
     ↓
-Step 2: AI 逐章生成小说正文（默认 3 章，可指定数量）
+Step 2: AI 逐章生成小说正文（默认 2 章，可指定数量）
     ↓
 Step 3: 浏览器自动打开番茄小说创作者后台，自动填写、自动发布
     ↓
@@ -538,13 +538,13 @@ uv run python run.py --platform fanqie --topic "都市重生" --outlines 20
 # Step 1: 只生成小说架构（书名、简介、世界观、人物、章节大纲）
 uv run python run.py --platform fanqie --topic "都市重生" --only 1
 
-# Step 2: 生成章节内容（默认3章）
+# Step 2: 生成章节内容（默认2章）
 uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 2
 
 # Step 2: 生成5章内容
 uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 2 --chapters 5
 
-# Step 3: 发布到番茄小说（默认3章）
+# Step 3: 发布到番茄小说（默认2章）
 uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 3
 
 # Step 3: 只发布1章
@@ -566,7 +566,7 @@ uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy
 | `--topic` | 都市重生 | 小说题材（如"玄幻修仙"、"都市重生"） |
 | `--genre` | 自动判断 | 小说分类（玄幻、都市、科幻、仙侠、言情等） |
 | `--outlines` | 10 | Step 1 架构中生成的章节数量 |
-| `--chapters` / `-c` | 3 | Step 2/3 每批次生成/发布章节数量 |
+| `--chapters` / `-c` | 2 | Step 2/3 每批次生成/发布章节数量 |
 | `--start` | 1 | 从第 N 章开始生成 |
 | `--book-dir` | 自动生成 | 已有小说目录（用于继续生成或发布） |
 | `--only 1` | - | 只生成架构 |
@@ -849,7 +849,7 @@ cat logs/$(date +%Y-%m-%d).jsonl
 
 **A:**
 - **Step 1**（`--only 1`）：生成小说架构 —— 书名、简介、世界观、人物设定、章节大纲。只出大纲，不写正文。
-- **Step 2**（`--only 2`）：根据大纲逐章生成小说正文。默认 3 章，可用 `--chapters` 指定数量。
+- **Step 2**（`--only 2`）：根据大纲逐章生成小说正文。默认 2 章，可用 `--chapters` 指定数量。
 - **Step 3**（`--only 3`）：自动发布到番茄小说创作者后台。默认发布 3 章，可用 `--chapters` 指定。
 
 #### Q: 怎么追加新章节（加更）？
@@ -868,7 +868,7 @@ uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy
 
 **A:**
 - `--outlines`（默认 10）：Step 1 生成多少章大纲。比如设 100，就会生成 100 章的剧情规划。
-- `--chapters`（默认 3）：Step 2/3 每批次生成/发布几章。比如设 5，每次就生成 5 章内容。
+- `--chapters`（默认 2）：Step 2/3 每批次生成/发布几章。比如设 5，每次就生成 5 章内容。
 
 #### Q: 发布时提示"所有章节已发布"怎么办？
 
