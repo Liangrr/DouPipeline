@@ -578,7 +578,8 @@ async def main():
 
     book_dir = args.book_dir
     if not os.path.isabs(book_dir):
-        book_dir = os.path.join(PROJECT_ROOT, book_dir)
+        from account_manager import get_account_novels_dir
+        book_dir = os.path.join(get_account_novels_dir(args.account), book_dir)
 
     await publish(book_dir, account_name=args.account, only=args.only)
 

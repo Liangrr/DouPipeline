@@ -843,7 +843,8 @@ async def main():
     if args.book_dir:
         book_dir = args.book_dir
         if not os.path.isabs(book_dir):
-            book_dir = os.path.join(PROJECT_ROOT, book_dir)
+            from account_manager import get_account_novels_dir
+            book_dir = os.path.join(get_account_novels_dir(args.account), book_dir)
     elif args.output:
         book_dir = args.output
     else:

@@ -19,15 +19,15 @@
     python run.py --platform xiaohongshu --only 2           # 只发布
 
 番茄小说链路 (fanqie):
-    python run.py --platform fanqie --topic "都市重生"              # 完整流程：架构→章节→发布
+    python run.py --platform fanqie --topic "玄幻修仙"              # 完整流程：架构→章节→发布
     python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --outlines 10 --chapters 5
-    python run.py --platform fanqie --topic "都市重生" --only 1    # 只生成架构
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 2  # 生成章节（默认2章）
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 2 --chapters 5  # 生成5章
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 3  # 发布（默认2章）
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 3 --chapters 1  # 发布1章
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 4 --total 100  # 重新规划大纲到100章
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 5            # 补全缺失大纲
+    python run.py --platform fanqie --topic "玄幻修仙" --only 1    # 只生成架构
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 2  # 生成章节（默认2章）
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 2 --chapters 5  # 生成5章
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 3  # 发布（默认2章）
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 3 --chapters 1  # 发布1章
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 4 --total 100  # 重新规划大纲到100章
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 5            # 补全缺失大纲
 
 多账号管理:
     python run.py --platform douyin --account list          # 列出所有账号
@@ -242,7 +242,7 @@ async def run_xiaohongshu_pipeline(args):
 
 async def run_fanqie_pipeline(args):
     """番茄小说链路: architecture → chapters → publish"""
-    args.topic = args.topic or "都市重生"
+    args.topic = args.topic or "玄幻修仙"
     account_name = getattr(args, 'account', 'legacy') or 'legacy'
 
     print("=" * 60)
@@ -260,7 +260,8 @@ async def run_fanqie_pipeline(args):
     # 确定小说输出目录
     if book_dir:
         if not os.path.isabs(book_dir):
-            book_dir = os.path.join(PROJECT_ROOT, book_dir)
+            from account_manager import get_account_novels_dir
+            book_dir = os.path.join(get_account_novels_dir(account_name), book_dir)
     else:
         from account_manager import get_account_novels_dir
         novels_dir = get_account_novels_dir(account_name)
@@ -399,11 +400,11 @@ def main():
     python run.py --platform xiaohongshu --only 2           # 只发布
 
   番茄小说链路:
-    python run.py --platform fanqie --topic "都市重生"       # 完整流程
+    python run.py --platform fanqie --topic "玄幻修仙"       # 完整流程
     python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --chapters 10
-    python run.py --platform fanqie --topic "都市重生" --only 1   # 只生成架构
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 2  # 只生成章节
-    python run.py --platform fanqie --book-dir novels/都市重生 --only 3  # 只发布
+    python run.py --platform fanqie --topic "玄幻修仙" --only 1   # 只生成架构
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 2  # 只生成章节
+    python run.py --platform fanqie --book-dir 玄幻修仙 --only 3  # 只发布
 
   多账号管理:
     python run.py --platform douyin --account list          # 列出所有账号
