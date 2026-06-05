@@ -26,6 +26,8 @@
     python run.py --platform fanqie --book-dir novels/都市重生 --only 2 --chapters 5  # 生成5章
     python run.py --platform fanqie --book-dir novels/都市重生 --only 3  # 发布（默认2章）
     python run.py --platform fanqie --book-dir novels/都市重生 --only 3 --chapters 1  # 发布1章
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 4 --total 100  # 重新规划大纲到100章
+    python run.py --platform fanqie --book-dir novels/都市重生 --only 5            # 补全缺失大纲
 
 多账号管理:
     python run.py --platform douyin --account list          # 列出所有账号
@@ -289,6 +291,45 @@ async def run_fanqie_pipeline(args):
     else:
         print("\n⏭️  Step 1: 跳过")
 
+    # --- Step 4: 重新规划大纲（故事写完了，扩展到更长）---
+    if only_step == 4:
+        print("\n🚀 Step 4: 重新规划大纲 (novel_generator)")
+        print("-" * 60)
+        try:
+            from novel_generator import load_architecture, redesign_architecture
+            architecture = load_architecture(book_dir)
+            await redesign_architecture(
+                architecture=architecture,
+                total_chapters=getattr(args, 'total', 100) or 100,
+                output_dir=book_dir,
+            )
+            print("✅ Step 4 完成")
+            log_execution(4, "redesign_architecture", success=True, platform="fanqie", account=account_name)
+        except Exception as e:
+            print(f"❌ Step 4 失败: {e}")
+            log_execution(4, "redesign_architecture", success=False, error_msg=str(e), platform="fanqie", account=account_name)
+            sys.exit(1)
+        return
+
+    # --- Step 5: 补全缺失大纲 ---
+    if only_step == 5:
+        print("\n🚀 Step 5: 补全缺失大纲 (novel_generator)")
+        print("-" * 60)
+        try:
+            from novel_generator import load_architecture, fill_missing_outlines
+            architecture = load_architecture(book_dir)
+            await fill_missing_outlines(
+                architecture=architecture,
+                output_dir=book_dir,
+            )
+            print("✅ Step 5 完成")
+            log_execution(5, "fill_missing_outlines", success=True, platform="fanqie", account=account_name)
+        except Exception as e:
+            print(f"❌ Step 5 失败: {e}")
+            log_execution(5, "fill_missing_outlines", success=False, error_msg=str(e), platform="fanqie", account=account_name)
+            sys.exit(1)
+        return
+
     # --- Step 2: 生成章节内容（默认2章，可通过 --chapters 指定）---
     if (start_step <= 2) and (only_step is None or only_step == 2):
         print("\n🚀 Step 2: 生成章节内容 (novel_generator)")
@@ -439,6 +480,14 @@ def main():
     fanqie_group.add_argument(
         "--book-dir",
         help="[番茄] 已有小说目录，用于继续生成或发布",
+    )
+    fanqie_group.add_argument(
+        "--add", type=int, default=2,
+        help="[番茄] 追加章节数量 (配合 --only 3 使用，默认2)",
+    )
+    fanqie_group.add_argument(
+        "--total", type=int, default=100,
+        help="[番茄] 目标总章节数 (配合 --only 4 使用，默认100)",
     )
 
     args = parser.parse_args()

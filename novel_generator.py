@@ -254,6 +254,366 @@ async def extend_architecture(
     return architecture
 
 
+# ==================== Phase 1.6: 重新规划大纲（扩展故事架构）====================
+
+async def redesign_architecture(
+    architecture: dict,
+    total_chapters: int = 100,
+    output_dir: str = None,
+) -> dict:
+    """
+    重新规划小说架构，扩展故事线以支持更多章节
+
+    适用场景：原有大纲已写完（如10章就完结），需要扩展到更长篇幅。
+    保留已有章节大纲不变，重新规划整体故事走向，生成新的章节大纲。
+    自动分批生成，支持任意章节数量。
+
+    Args:
+        architecture: 已有的小说架构字典
+        total_chapters: 目标总章节数
+        output_dir: 输出目录，为空则不保存文件
+
+    Returns:
+        更新后的架构字典
+    """
+    existing_chapters = architecture.get("chapters", [])
+    current_count = len(existing_chapters)
+
+    if total_chapters <= current_count:
+        print(f"⚠️ 目标章节数({total_chapters})不大于当前章节数({current_count})，无需重新规划")
+        return architecture
+
+    client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
+    role = _load_prompt_file("roles", "novel")
+
+    # 每批最多生成 50 章（避免超出 token 限制）
+    BATCH_SIZE = 50
+    batch_start = current_count + 1
+    is_first_batch = True
+
+    print(f"🤖 正在重新规划架构: {current_count}章 → {total_chapters}章 (每批{BATCH_SIZE}章)...")
+
+    while batch_start <= total_chapters:
+        batch_end = min(batch_start + BATCH_SIZE - 1, total_chapters)
+        batch_count = batch_end - batch_start + 1
+
+        # 构建已有章节摘要（只在第一批传完整摘要，后续批次只传最近 20 章）
+        existing_chapters = architecture.get("chapters", [])
+        if is_first_batch:
+            outline_text = "\n".join(
+                f"第{ch['chapter_num']}章 {ch['title']}：{ch['outline']}"
+                for ch in existing_chapters
+            )
+        else:
+            recent = existing_chapters[-20:]
+            outline_text = "\n".join(
+                f"第{ch['chapter_num']}章 {ch['title']}：{ch['outline']}"
+                for ch in recent
+            )
+
+        if is_first_batch:
+            user_prompt = f"""【书名】{architecture.get('book_name', '')}
+【当前简介】{architecture.get('summary', '')}
+【世界观】{architecture.get('world_setting', '')}
+【当前章节数】{current_count} 章
+【目标总章节数】{total_chapters} 章
+
+【已有章节大纲】
+{outline_text}
+
+=== 问题 ===
+以上 {current_count} 章大纲已经把故事写完了，无法继续写下去。
+
+=== 任务 ===
+请重新规划小说故事架构，从第{batch_start}章到第{batch_end}章的大纲。
+
+要求：
+1. 保留已有 {current_count} 章大纲不变
+2. 重新设计更长远的故事主线（更大的敌人、新世界、更深层的阴谋）
+3. 自然衔接已有剧情，不能突兀转折
+4. 每50-100章设置一个大阶段/大boss
+5. 逐步升级冲突和主角实力
+
+输出 JSON 格式：
+{{
+  "summary": "更新后的简介（体现长篇格局）",
+  "new_chapters": [
+    {{"chapter_num": {batch_start}, "title": "标题", "outline": "大纲100-200字"}}
+  ]
+}}"""
+        else:
+            user_prompt = f"""【书名】{architecture.get('book_name', '')}
+【世界观】{architecture.get('world_setting', '')}
+
+【最近章节摘要】
+{outline_text}
+
+=== 任务 ===
+继续生成第{batch_start}章到第{batch_end}章的大纲（共{batch_count}章）。
+
+要求：
+1. 延续已有剧情，保持连贯
+2. 每50-100章设置一个大阶段/大boss
+3. 逐步升级冲突和主角实力
+
+输出 JSON 格式：
+{{
+  "new_chapters": [
+    {{"chapter_num": {batch_start}, "title": "标题", "outline": "大纲100-200字"}}
+  ]
+}}"""
+
+        print(f"   📝 生成第{batch_start}~{batch_end}章...")
+
+        max_tokens = min(max(8192, batch_count * 150 + 2000), 65536)
+
+        # 重试机制：最多重试 2 次
+        result = None
+        for attempt in range(3):
+            try:
+                response = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=[
+                        {"role": "system", "content": role},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0.8,
+                    max_tokens=max_tokens,
+                )
+
+                raw = response.choices[0].message.content.strip()
+
+                # 解析 JSON
+                json_str = raw
+                if "```json" in json_str:
+                    json_str = json_str.split("```json")[1].split("```")[0].strip()
+                elif "```" in json_str:
+                    json_str = json_str.split("```")[1].split("```")[0].strip()
+
+                try:
+                    result = json.loads(json_str)
+                except json.JSONDecodeError:
+                    print(f"   ⚠️ JSON 解析失败，尝试自动修复... (第{attempt+1}次)")
+                    json_str = fix_json(json_str)
+                    result = json.loads(json_str)
+
+                break  # 成功，跳出重试循环
+
+            except (json.JSONDecodeError, Exception) as e:
+                if attempt < 2:
+                    print(f"   ⚠️ 批次失败 ({e})，重试中...")
+                    await asyncio.sleep(2)
+                else:
+                    print(f"   ❌ 批次失败，跳过第{batch_start}~{batch_end}章")
+                    result = None
+
+        if result is None:
+            # 跳过这批，继续下一批
+            batch_start = batch_end + 1
+            continue
+
+        # 第一批更新简介
+        if is_first_batch and result.get("summary"):
+            architecture["summary"] = result["summary"]
+
+        # 追加新章节
+        new_chapters = result.get("new_chapters", [])
+        architecture["chapters"].extend(new_chapters)
+        print(f"   ✅ 已生成 {len(new_chapters)} 章")
+
+        # 每批保存一次（防止中途崩溃丢失进度）
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            arch_path = os.path.join(output_dir, "architecture.json")
+            with open(arch_path, "w", encoding="utf-8") as f:
+                json.dump(architecture, f, ensure_ascii=False, indent=2)
+
+        is_first_batch = False
+        batch_start = batch_end + 1
+
+        # 批次间延迟
+        if batch_start <= total_chapters:
+            await asyncio.sleep(1)
+
+    total_new = len(architecture["chapters"]) - current_count
+    print(f"✅ 架构重新规划完成: 现共 {len(architecture['chapters'])} 章 (新增 {total_new} 章)")
+
+    # 保存
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        arch_path = os.path.join(output_dir, "architecture.json")
+        with open(arch_path, "w", encoding="utf-8") as f:
+            json.dump(architecture, f, ensure_ascii=False, indent=2)
+        print(f"   ✅ 已保存到: {arch_path}")
+
+    return architecture
+
+
+# ==================== Phase 1.7: 补全缺失章节大纲 ====================
+
+async def fill_missing_outlines(
+    architecture: dict,
+    output_dir: str = None,
+) -> dict:
+    """
+    检测并补全缺失的章节大纲
+
+    适用场景：分批生成时中途崩溃，导致部分章节丢失（如1-100有，100-200丢失，200-300有）。
+    自动检测缺失的章节范围，只补生成缺失部分。
+
+    Args:
+        architecture: 已有的小说架构字典
+        output_dir: 输出目录，为空则不保存文件
+
+    Returns:
+        更新后的架构字典
+    """
+    chapters = architecture.get("chapters", [])
+    if not chapters:
+        print("⚠️ 没有已有章节，无法补全")
+        return architecture
+
+    # 找出已有的章节号
+    existing_nums = {ch["chapter_num"] for ch in chapters}
+    max_chapter = max(existing_nums)
+
+    # 找出缺失的章节号
+    missing = sorted(set(range(1, max_chapter + 1)) - existing_nums)
+
+    if not missing:
+        print(f"✅ 没有缺失章节（共 {max_chapter} 章完整）")
+        return architecture
+
+    # 按连续范围分组
+    gaps = []
+    start = missing[0]
+    end = missing[0]
+    for num in missing[1:]:
+        if num == end + 1:
+            end = num
+        else:
+            gaps.append((start, end))
+            start = num
+            end = num
+    gaps.append((start, end))
+
+    total_missing = len(missing)
+    print(f"🔍 检测到 {total_missing} 章缺失（{len(gaps)} 个区间）:")
+    for s, e in gaps:
+        print(f"   第{s}~{e}章 ({e - s + 1}章)")
+
+    client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
+    role = _load_prompt_file("roles", "novel")
+
+    # 构建已有章节摘要（按区间前后取上下文）
+    for gap_start, gap_end in gaps:
+        gap_count = gap_end - gap_start + 1
+        print(f"\n🤖 补全第{gap_start}~{gap_end}章...")
+
+        # 取缺口前后的章节作为上下文
+        before = [ch for ch in chapters if ch["chapter_num"] < gap_start]
+        after = [ch for ch in chapters if ch["chapter_num"] > gap_end]
+        context_before = before[-10:] if len(before) > 10 else before
+        context_after = after[:5] if len(after) > 5 else after
+
+        context_text = ""
+        if context_before:
+            context_text += "【前文大纲】\n"
+            for ch in context_before:
+                context_text += f"第{ch['chapter_num']}章 {ch['title']}：{ch['outline']}\n"
+
+        if context_after:
+            context_text += "\n【后文大纲】\n"
+            for ch in context_after:
+                context_text += f"第{ch['chapter_num']}章 {ch['title']}：{ch['outline']}\n"
+
+        # 分批补全（每批最多50章）
+        BATCH_SIZE = 50
+        batch_start = gap_start
+
+        while batch_start <= gap_end:
+            batch_end = min(batch_start + BATCH_SIZE - 1, gap_end)
+            batch_count = batch_end - batch_start + 1
+
+            user_prompt = f"""【书名】{architecture.get('book_name', '')}
+【世界观】{architecture.get('world_setting', '')}
+
+{context_text}
+=== 任务 ===
+补全第{batch_start}章到第{batch_end}章的大纲（共{batch_count}章）。
+这些章节位于已有剧情之间，需要自然衔接前后内容。
+
+输出 JSON 格式：
+{{
+  "new_chapters": [
+    {{"chapter_num": {batch_start}, "title": "标题", "outline": "大纲100-200字"}}
+  ]
+}}"""
+
+            print(f"   📝 补全第{batch_start}~{batch_end}章...")
+
+            max_tokens = min(max(8192, batch_count * 150 + 2000), 65536)
+
+            # 重试机制
+            result = None
+            for attempt in range(3):
+                try:
+                    response = await client.chat.completions.create(
+                        model=MODEL,
+                        messages=[
+                            {"role": "system", "content": role},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        temperature=0.8,
+                        max_tokens=max_tokens,
+                    )
+
+                    raw = response.choices[0].message.content.strip()
+
+                    json_str = raw
+                    if "```json" in json_str:
+                        json_str = json_str.split("```json")[1].split("```")[0].strip()
+                    elif "```" in json_str:
+                        json_str = json_str.split("```")[1].split("```")[0].strip()
+
+                    try:
+                        result = json.loads(json_str)
+                    except json.JSONDecodeError:
+                        json_str = fix_json(json_str)
+                        result = json.loads(json_str)
+
+                    break
+
+                except Exception as e:
+                    if attempt < 2:
+                        print(f"   ⚠️ 失败 ({e})，重试中...")
+                        await asyncio.sleep(2)
+                    else:
+                        print(f"   ❌ 补全失败，跳过第{batch_start}~{batch_end}章")
+
+            if result:
+                new_chapters = result.get("new_chapters", [])
+                architecture["chapters"].extend(new_chapters)
+                architecture["chapters"].sort(key=lambda c: c.get("chapter_num", 0))
+                print(f"   ✅ 已补全 {len(new_chapters)} 章")
+
+                # 每批保存
+                if output_dir:
+                    os.makedirs(output_dir, exist_ok=True)
+                    arch_path = os.path.join(output_dir, "architecture.json")
+                    with open(arch_path, "w", encoding="utf-8") as f:
+                        json.dump(architecture, f, ensure_ascii=False, indent=2)
+
+            batch_start = batch_end + 1
+            if batch_start <= gap_end:
+                await asyncio.sleep(1)
+
+    final_count = len(architecture.get("chapters", []))
+    print(f"\n✅ 补全完成: 现共 {final_count} 章")
+
+    return architecture
+
+
 # ==================== Phase 2: 生成章节内容 ====================
 
 async def generate_chapter(
@@ -471,10 +831,11 @@ async def main():
     parser.add_argument("--chapters", "-c", type=int, default=10, help="章节数量 (默认: 10)")
     parser.add_argument("--output", "-o", help="输出目录")
     parser.add_argument("--account", default="legacy", help="账号名称")
-    parser.add_argument("--only", type=int, choices=[1, 2, 3], help="只执行某步 (1=架构, 2=章节, 3=扩展架构+生成新章节)")
+    parser.add_argument("--only", type=int, choices=[1, 2, 3, 4, 5], help="只执行某步 (1=架构, 2=章节, 3=扩展架构, 4=重新规划大纲, 5=补全缺失大纲)")
     parser.add_argument("--start", type=int, default=1, help="从第N章开始生成 (仅 step 2)")
     parser.add_argument("--book-dir", help="已有小说目录 (用于继续生成章节)")
     parser.add_argument("--add", type=int, default=2, help="追加章节数量 (配合 --only 3 使用，默认2章)")
+    parser.add_argument("--total", type=int, default=100, help="目标总章节数 (配合 --only 4 使用，默认100)")
 
     args = parser.parse_args()
 
@@ -507,6 +868,23 @@ async def main():
         # 加载已有架构
         architecture = load_architecture(book_dir)
         print(f"📖 已加载架构: {architecture.get('book_name', '')}")
+
+    # Step 4: 重新规划大纲（故事写完了，扩展到更长篇幅）
+    if args.only == 4:
+        architecture = await redesign_architecture(
+            architecture=architecture,
+            total_chapters=args.total,
+            output_dir=book_dir,
+        )
+        return
+
+    # Step 5: 补全缺失章节大纲
+    if args.only == 5:
+        architecture = await fill_missing_outlines(
+            architecture=architecture,
+            output_dir=book_dir,
+        )
+        return
 
     # Step 3: 扩展架构 + 生成新章节
     if args.only == 3:

@@ -455,6 +455,23 @@ uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy
 uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/玄幻修仙 --only 3
 
 
+# ========== 故事写完了？重新规划大纲 ==========
+
+# 原来10章就完结了，扩展到能写100章
+#    --total 100    → 目标总章节数（默认100）
+#    --total 1000   → 长篇小说，扩展到1000章
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 4 --total 100
+
+# 重新规划后，继续生成新章节
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/玄幻修仙 --only 2 --start 11
+
+
+# ========== 中途崩溃？补全缺失大纲 ==========
+
+# 自动检测缺失章节并补全（如1-100有，100-200丢失，200-300有 → 自动补100-200）
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 5
+
+
 # ========== 一条命令搞定全流程 ==========
 
 # 生成架构(10章大纲) + 生成2章 + 发布2章
@@ -476,9 +493,12 @@ uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" -
 | `--book-dir` | 自动生成 | 小说目录路径 |
 | `--only 1` | - | 只生成大纲 |
 | `--only 2` | - | 只生成章节内容 |
-| `--only 3` | - | 只发布（或追加大纲） |
+| `--only 3` | - | 追加大纲+生成内容 |
+| `--only 4` | - | 重新规划大纲（故事写完了，扩展到更长） |
+| `--only 5` | - | 补全缺失大纲（中途崩溃，自动检测并补全） |
 | `--step 2` | - | 生成+发布连续执行 |
 | `--add N` | 2 | 追加 N 章大纲（配合 `--only 3`） |
+| `--total N` | 100 | 目标总章节数（配合 `--only 4`） |
 
 ### 查看帮助
 
@@ -765,6 +785,22 @@ cat logs/$(date +%Y-%m-%d).jsonl
 uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 3 --add 5
 ```
 这会在现有架构上追加 5 章大纲，并自动生成内容。不会覆盖已有章节。
+
+#### Q: 生成大纲时中途崩溃了，部分章节丢失怎么办？
+
+**A:** 用 `--only 5` 自动补全缺失章节：
+```bash
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 5
+```
+自动检测哪些章节大纲缺失，只补生成缺失部分，不会覆盖已有章节。
+
+#### Q: 故事写完了，没法继续写怎么办？
+
+**A:** 用 `--only 4` 重新规划大纲：
+```bash
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 4 --total 100
+```
+这会保留已有章节不变，让 AI 重新设计更长远的故事主线（如更大的敌人、新的世界），生成新的章节大纲。`--total` 指定目标总章节数。
 
 #### Q: 书名太长/太短怎么办？
 
