@@ -102,120 +102,19 @@
 
 ---
 
-## ⚡ 快速配置（拿到项目后第一件事）
-
-### 1. 复制配置文件模板
-
-```bash
-cp .env.example .env
-```
-
-### 2. 编辑 `.env`，填写你的 API 密钥
-
-```env
-# ========== 必须修改（不改跑不起来！）==========
-
-# 你的大模型 API 密钥（去对应平台申请，下面有获取方法）
-MIMO_API_KEY=把这里换成你的密钥
-
-# ========== 以下一般不用改（想换模型时再改）==========
-
-# 大模型 API 地址（默认是小米 MiMo）
-MIMO_BASE_URL=https://token-plan-cn.xiaomimimo.com/v1
-
-# 使用的模型名称
-MIMO_MODEL=mimo-v2.5
-```
-
-### 3. API 密钥怎么获取？
-
-| 模型平台 | 官网 | 获取密钥 |
-|---------|------|---------|
-| **小米 MiMo**（默认） | [token-plan-cn.xiaomimimo.com](https://token-plan-cn.xiaomimimo.com) | 注册后在控制台获取 API Key |
-| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com) | 注册后在 API Keys 页面创建 |
-| **通义千问** | [dashscope.aliyun.com](https://dashscope.aliyun.com) | 注册后在 API-KEY 管理页面创建 |
-| **其他兼容 OpenAI 接口的模型** | 对应平台 | 对应平台获取 |
-
-> 💡 **只要兼容 OpenAI 接口的模型都能用！** 修改 `MIMO_BASE_URL` 和 `MIMO_MODEL` 即可。
->
-> 例如换成 DeepSeek：
-> ```env
-> MIMO_API_KEY=sk-xxxxxxxxxxxxxxxx
-> MIMO_BASE_URL=https://api.deepseek.com/v1
-> MIMO_MODEL=deepseek-chat
-> ```
-
-### 4. 还有哪些可以改？
-
-| 配置文件 | 改什么 | 什么时候需要改 |
-|---------|--------|--------------|
-| `.env` | 大模型 API 地址、密钥、模型名 | **必须改！** 不改跑不起来 |
-| `prompts.json` | AI 的角色设定和写作风格 | 想让 AI 写不同风格时改 |
-| `run.py` 中的默认主题 | `美女`（抖音）、`宝妈育儿`（小红书） | 想换默认主题时改 |
-
-> ⚠️ **`.env` 包含你的密钥，绝对不要分享给别人或提交到 git！**
-
----
-
 ## 📖 目录
 
 - [功能介绍](#-功能介绍)
 - [效果展示](#-效果展示)
-- [快速配置（拿到项目后第一件事）](#-快速配置拿到项目后第一件事)
-- [这个工具能干什么？](#-这个工具能干什么)
 - [环境准备（必看！）](#-环境准备必看)
 - [安装步骤（手把手教）](#-安装步骤手把手教)
 - [配置 API 密钥（必须！）](#-配置-api-密钥必须)
 - [第一次运行（含扫码登录）](#-第一次运行含扫码登录)
-- [日常使用命令大全](#-日常使用命令大全)
+- [日常使用命令大全](#-日常使用命令大全)（抖音 / 小红书 / 番茄小说）
 - [多账号管理](#-多账号管理)
 - [项目文件说明](#-项目文件说明)
 - [常见问题 FAQ](#-常见问题-faq)
 - [工作原理（技术细节）](#-工作原理技术细节)
-
----
-
-## 🎯 这个工具能干什么？
-
-### 抖音发布（3 步全自动）
-
-```
-你输入一个主题（比如"旅行攻略"）
-    ↓
-Step 1: AI 自动生成标题、正文、图片描述（调用 LLM）
-    ↓
-Step 2: AI 自动生成配图（调用豆包 AI 画图）
-    ↓
-Step 3: 浏览器自动打开抖音创作者平台，自动填写、自动发布
-    ↓
-✅ 发布完成！
-```
-
-### 小红书发布（2 步全自动）
-
-```
-你输入一个主题（比如"宝妈育儿"）
-    ↓
-Step 1: AI 自动生成标题、正文、标签（调用 LLM）
-    ↓
-Step 2: 浏览器自动打开小红书创作者中心，自动填写、自动发布
-    ↓
-✅ 发布完成！
-```
-
-### 番茄小说发布（3 步全自动）
-
-```
-你输入一个题材（比如"玄幻修仙"）
-    ↓
-Step 1: AI 生成整部小说架构（书名、简介、世界观、人物、章节大纲）
-    ↓
-Step 2: AI 逐章生成小说正文（默认 2 章，可指定数量）
-    ↓
-Step 3: 浏览器自动打开番茄小说创作者后台，自动填写、自动发布
-    ↓
-✅ 发布完成！后续可随时追加新章节
-```
 
 ---
 
@@ -425,7 +324,7 @@ uv run python run.py --platform xiaohongshu --only 1
 
 ```bash
 # 只运行第一步（触发登录，不实际发布）
-uv run python run.py --platform fanqie --topic "都市重生" --only 1
+uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --only 1
 ```
 
 弹出浏览器后，在番茄小说创作者后台登录（支持手机号、抖音账号等）。登录状态会保存，后续自动复用。
@@ -522,57 +421,64 @@ uv run python run.py --platform xiaohongshu --only 2
 ### 番茄小说发布
 
 ```bash
-# ========== 完整流程 ==========
+# ========== 新书：生成大纲 → 生成章节 → 发布 ==========
 
-# 一条命令搞定：生成架构 + 生成3章 + 发布3章
-uv run python run.py --platform fanqie --topic "都市重生"
+# 1. 生成小说大纲（只出架构，不写正文）
+#    --outlines 10  → 生成10章大纲（默认10，长篇可设100）
+uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --only 1
 
-# 指定分类和章节数
-uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --chapters 5
+# 2. 生成章节内容（按大纲写正文）
+#    --start 3      → 从第3章开始（默认1，即从头开始）
+#    --chapters 5   → 生成5章（默认2）
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/玄幻修仙 --only 2
 
-# 生成更多章节大纲（默认10章）
-uv run python run.py --platform fanqie --topic "都市重生" --outlines 20
+# 3. 发布到番茄小说
+#    --chapters 1   → 只发布1章（默认2，发完自动跳过已发布的）
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/玄幻修仙 --only 3
 
-# ========== 分步执行 ==========
 
-# Step 1: 只生成小说架构（书名、简介、世界观、人物、章节大纲）
-uv run python run.py --platform fanqie --topic "都市重生" --only 1
+# ========== 一步到位：生成+发布 ==========
 
-# Step 2: 生成章节内容（默认2章）
-uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 2
+# 生成2章 + 自动发布（跳过Step 1，需已有大纲）
+#    --chapters 5   → 生成5章并发布（默认2）
+#    --start 3      → 从第3章开始（默认1）
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/玄幻修仙 --step 2
 
-# Step 2: 生成5章内容
-uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 2 --chapters 5
 
-# Step 3: 发布到番茄小说（默认2章）
-uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 3
+# ========== 后续加更：大纲用完了，追加新大纲 ==========
 
-# Step 3: 只发布1章
-uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/都市重生 --only 3 --chapters 1
+# 追加新大纲 + 自动生成内容
+#    --add 5        → 追加5章（默认2）
+uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 3
 
-# ========== 追加章节（后续加更）==========
+# 追加后发布
+uv run python run.py --platform fanqie --book-dir accounts/legacy/novels/玄幻修仙 --only 3
 
-# 在现有架构上追加3章大纲 + 生成内容
-uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 3 --add 3
 
-# 追加5章
-uv run python novel_generator.py --topic 玄幻修仙 --book-dir accounts/legacy/novels/玄幻修仙 --only 3 --add 5
+# ========== 一条命令搞定全流程 ==========
+
+# 生成架构(10章大纲) + 生成2章 + 发布2章
+uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻"
+
+# 生成50章大纲，每次生成5章
+uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" --outlines 50 --chapters 5
 ```
 
 ### 番茄小说参数速查表
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--topic` | 都市重生 | 小说题材（如"玄幻修仙"、"都市重生"） |
-| `--genre` | 自动判断 | 小说分类（玄幻、都市、科幻、仙侠、言情等） |
-| `--outlines` | 10 | Step 1 架构中生成的章节数量 |
-| `--chapters` / `-c` | 2 | Step 2/3 每批次生成/发布章节数量 |
-| `--start` | 1 | 从第 N 章开始生成 |
-| `--book-dir` | 自动生成 | 已有小说目录（用于继续生成或发布） |
-| `--only 1` | - | 只生成架构 |
+| `--topic` | 玄幻修仙 | 小说题材 |
+| `--genre` | 自动判断 | 分类（玄幻、都市、科幻等） |
+| `--outlines` | 10 | Step 1 生成多少章大纲 |
+| `--chapters` / `-c` | 2 | 每批次生成/发布几章 |
+| `--start` | 1 | 从第几章开始生成 |
+| `--book-dir` | 自动生成 | 小说目录路径 |
+| `--only 1` | - | 只生成大纲 |
 | `--only 2` | - | 只生成章节内容 |
-| `--only 3` | - | 只发布到番茄小说 |
-| `--only 3 --add N` | - | 追加 N 章大纲 + 生成内容（用 novel_generator.py） |
+| `--only 3` | - | 只发布（或追加大纲） |
+| `--step 2` | - | 生成+发布连续执行 |
+| `--add N` | 2 | 追加 N 章大纲（配合 `--only 3`） |
 
 ### 查看帮助
 
@@ -850,7 +756,7 @@ cat logs/$(date +%Y-%m-%d).jsonl
 **A:**
 - **Step 1**（`--only 1`）：生成小说架构 —— 书名、简介、世界观、人物设定、章节大纲。只出大纲，不写正文。
 - **Step 2**（`--only 2`）：根据大纲逐章生成小说正文。默认 2 章，可用 `--chapters` 指定数量。
-- **Step 3**（`--only 3`）：自动发布到番茄小说创作者后台。默认发布 3 章，可用 `--chapters` 指定。
+- **Step 3**（`--only 3`）：自动发布到番茄小说创作者后台。默认发布 2 章，可用 `--chapters` 指定。
 
 #### Q: 怎么追加新章节（加更）？
 
@@ -886,38 +792,36 @@ rm accounts/legacy/novels/玄幻修仙/publish_state.json
 ### 整体架构
 
 ```
-用户输入主题
+用户输入主题/题材
     ↓
 ┌─────────────────────────────────────────┐
 │  run.py（统一入口）                       │
 │  解析命令行参数，调度对应链路              │
 └───────────┬─────────────────────────────┘
             ↓
-┌─────────────────────────────────────────┐
-│  generate.py（LLM 内容生成）              │
-│  调用 MiMo 大模型，生成：                 │
-│  - 标题、副标题、正文                     │
-│  - 图片描述提示词（prompt）               │
-│  输出: doubao.json                        │
-└───────────┬─────────────────────────────┘
-            ↓
-┌─────────────────────────────────────────┐
-│  doubao.py（豆包 AI 生图）               │
-│  自动操作豆包网站：                       │
-│  - 逐条输入 prompt                        │
-│  - 等待图片生成                           │
-│  - 下载高清图片（自动去水印）              │
-│  输出: doubao_output/*.jpg                │
-└───────────┬─────────────────────────────┘
-            ↓
-┌─────────────────────────────────────────┐
-│  douyin/publisher.py 或                   │
-│  xiaohongshu/publisher.py                 │
-│  自动操作浏览器：                          │
-│  - 打开创作者平台                          │
-│  - 上传图片/填写内容                       │
-│  - 点击发布                               │
-└─────────────────────────────────────────┘
+    ┌───────┴───────┐
+    │               │
+    ▼               ▼
+抖音/小红书       番茄小说
+    │               │
+    ▼               ▼
+┌────────────┐  ┌────────────────────┐
+│ generate.py │  │ novel_generator.py │
+│ LLM 生成文案│  │ 生成小说架构+章节   │
+└──────┬─────┘  └────────┬───────────┘
+       │                 │
+       ▼                 ▼
+┌────────────┐  ┌────────────────────┐
+│ doubao.py  │  │ fanqie/publisher.py│
+│ 豆包 AI 生图│  │ 浏览器自动发布小说  │
+└──────┬─────┘  └────────────────────┘
+       │
+       ▼
+┌────────────────┐
+│ douyin/ 或     │
+│ xiaohongshu/   │
+│ 浏览器自动发布  │
+└────────────────┘
 ```
 
 ### 技术栈
