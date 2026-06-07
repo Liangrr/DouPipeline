@@ -447,18 +447,19 @@ uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" -
 
 # 2. 生成章节内容（按大纲写正文）
 #    --start 3      → 从第3章开始（默认1，即从头开始）
-#    --chapters 5   → 生成5章（默认2）
+#    --chapters 5   → 生成5章（默认3）
 uv run python run.py --platform fanqie --book-dir 玄幻修仙 --only 2
 
 # 3. 发布到番茄小说
-#    --chapters 1   → 只发布1章（默认2，发完自动跳过已发布的）
+#    --chapters 1   → 只发布1章（默认3，发完自动跳过已发布的）
+#    --start 5      → 从第5章开始发布（默认1，跳过之前的章节）
 uv run python run.py --platform fanqie --book-dir 玄幻修仙 --only 3
 
 
 # ========== 一步到位：生成+发布 ==========
 
 # 从Step 2开始连续执行：生成章节 + 自动发布（跳过Step 1，需已有大纲）
-#    --chapters 5   → 生成5章并发布（默认2）
+#    --chapters 5   → 生成5章并发布（默认3）
 #    --start 3      → 从第3章开始（默认1）
 uv run python run.py --platform fanqie --book-dir 玄幻修仙 --step 2
 
@@ -466,7 +467,7 @@ uv run python run.py --platform fanqie --book-dir 玄幻修仙 --step 2
 # ========== 后续加更：大纲用完了，追加新大纲 ==========
 
 # 追加新大纲 + 自动生成内容
-#    --add 5        → 追加5章（默认2）
+#    --add 5        → 追加5章（默认3）
 uv run python novel_generator.py --topic 玄幻修仙 --book-dir 玄幻修仙 --only 3
 
 # 追加后发布
@@ -506,7 +507,7 @@ uv run python run.py --platform fanqie --topic "玄幻修仙" --genre "玄幻" -
 | `--topic` | 玄幻修仙 | 小说题材 |
 | `--genre` | 自动判断 | 分类（玄幻、都市、科幻等） |
 | `--outlines` | 10 | Step 1 生成多少章大纲 |
-| `--chapters` / `-c` | 2 | 每批次生成/发布几章 |
+| `--chapters` / `-c` | 3 | 每批次生成/发布几章 |
 | `--start` | 1 | 从第几章开始生成 |
 | `--book-dir` | 自动生成 | 书名（自动定位到账号目录，如 `玄幻修仙`） |
 | `--only 1` | - | 只生成大纲（run.py） |
@@ -805,8 +806,8 @@ cat logs/$(date +%Y-%m-%d).jsonl
 
 **A:**
 - **Step 1**（`--only 1`）：生成小说架构 —— 书名、简介、世界观、人物设定、章节大纲。只出大纲，不写正文。
-- **Step 2**（`--only 2`）：根据大纲逐章生成小说正文。默认 2 章，可用 `--chapters` 指定数量。
-- **Step 3**（`--only 3`）：自动发布到番茄小说创作者后台。默认发布 2 章，可用 `--chapters` 指定。
+- **Step 2**（`--only 2`）：根据大纲逐章生成小说正文。默认 3 章，可用 `--chapters` 指定数量。
+- **Step 3**（`--only 3`）：自动发布到番茄小说创作者后台。默认发布 3 章，可用 `--chapters` 指定。
 
 #### Q: 怎么追加新章节（加更）？
 
@@ -840,7 +841,7 @@ uv run python novel_generator.py --topic 玄幻修仙 --book-dir 玄幻修仙 --
 
 **A:**
 - `--outlines`（默认 10）：Step 1 生成多少章大纲。比如设 100，就会生成 100 章的剧情规划。
-- `--chapters`（默认 2）：Step 2/3 每批次生成/发布几章。比如设 5，每次就生成 5 章内容。
+- `--chapters`（默认 3）：Step 2/3 每批次生成/发布几章。比如设 5，每次就生成 5 章内容。
 
 #### Q: 发布时提示"所有章节已发布"怎么办？
 
