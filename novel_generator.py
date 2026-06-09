@@ -810,14 +810,14 @@ def list_chapters(book_dir: str) -> list:
     chapters = []
     if not os.path.exists(book_dir):
         return chapters
-    for f in sorted(os.listdir(book_dir)):
+    for f in os.listdir(book_dir):
         if f.startswith("chapter_") and f.endswith(".json"):
             try:
                 num = int(f.replace("chapter_", "").replace(".json", ""))
                 chapters.append(num)
             except ValueError:
                 pass
-    return chapters
+    return sorted(chapters)
 
 
 # ==================== CLI 入口 ====================
